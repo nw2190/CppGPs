@@ -119,3 +119,5 @@ params
 src_file
 
 Run
+*.csv
+*.o
