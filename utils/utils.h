@@ -101,16 +101,18 @@ namespace utils {
 
 
   
-  // NOTE: the "fast" version avoids extra function calls
-  // and is marginally faster than the more readable "toepMatVec"
+  // NOTE: the "fast" version avoids extra function calls and
+  // is marginally faster than the more pedagogical "toepMatVec"
   
   // Define matvec product for Toeplitz matrix using FFT (non-symmetric)
   Vector fastToepMatVec(Vector & toepCol, Vector & toepRow, Vector & x)
   {
     auto n = static_cast<int>(toepCol.rows());
+    Vector result(2*n);
+
+    // Embed RHS into 2n-vector with trailing zeros
     Vector xembed = Eigen::VectorXd::Zero(2*n);
     xembed.head(n) = x;
-    Vector result(2*n);
 
     // Specify first column of circulant matrix embedding
     Vector embedCol(2*n);
@@ -121,10 +123,13 @@ namespace utils {
     Eigen::FFT<double> fft;
     VectorXcd eigVals(2*n), freqvec(2*n);
     fft.fwd(eigVals, embedCol);
+
+    // Apply component-wise multiplication in frequency space
     fft.fwd(freqvec, xembed);
     freqvec = eigVals.cwiseProduct(freqvec);
     fft.inv(result,freqvec);
 
+    // Return first n values corresponding to the original system
     return result.head(n);
 
   };
