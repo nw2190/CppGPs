@@ -37,7 +37,11 @@ int main(int argc, char const *argv[])
   using utils::buildToep;
   using utils::toepMatVec;
   using utils::fastToepMatVec;
+  using utils::fastToepMatMat;
   using utils::diagnosticFastToepMatVec;
+
+  using utils::Lanczos;
+
 
   // Aliases for timing functions with chrono
   using std::chrono::high_resolution_clock;
@@ -46,12 +50,13 @@ int main(int argc, char const *argv[])
   // Set random seed
   std::srand(static_cast<unsigned int>(high_resolution_clock::now().time_since_epoch().count()));
 
+  /*
   // Define values for Toeplitz column
   int N = 15000;
   Vector mesh = linspace(0.0,1.0,N);
   mesh = mesh + sampleUnif(-0.1, 0.1, N);
 
-  // Define right-hand side
+  // Define vector for matvec product
   Vector x = Eigen::VectorXd::Random(N);
 
   
@@ -103,10 +108,10 @@ int main(int argc, char const *argv[])
 
   // Display errors for symmetric and non-symmetric cases
   cout << "\nAbsolute Error (Symmetric):" << endl;
-  cout << (directResult - fftResult).squaredNorm() << endl;
+  cout << (directResult - fftResult).norm() << endl;
 
   cout << "\nAbsolute Error (Non-Symmetric):" << endl;
-  cout << (directResult2 - fftResult2).squaredNorm() << endl;
+  cout << (directResult2 - fftResult2).norm() << endl;
 
   // Display evaluation times for symmetric and non-symmetric cases
   cout << endl << "\nEvaluation Time (Symmetric):" << endl;
@@ -117,6 +122,37 @@ int main(int argc, char const *argv[])
 
   // Display build time to construct dense Toeplitz matrices
   cout << endl << "[ Build duration: " << buildDuration << " ]" << endl << endl;
+
+  */
+
+  // Define values for Toeplitz column
+  int N = 200;
+  Vector mesh = linspace(0.0,1.0,N);
+  mesh = mesh + sampleUnif(-0.1, 0.1, N);
+
+  // Build Toeplitz matrices for direct evaluation
+  Matrix A = buildToep(mesh.reverse());
+
+  // Define vector for multiplication
+  Vector v = Eigen::VectorXd::Random(N);
+  v.normalize();
+  
+  // Define matrices to store decomposition
+  Matrix V(N,N);
+  Matrix T(N,N);
+
+  time start = high_resolution_clock::now();
+  Lanczos(A, v, V, T);
+  time end = high_resolution_clock::now();
+  auto lanczosTime = getTime(start, end);
+  
+  cout << "Lanczos Decomposition Error:\n";
+  cout << (A*V - V*T).norm() << endl;
+
+  cout << "Lanczos Evaluation Time:\n";
+  cout << lanczosTime << " s" << endl;
+
+
   
   return 0;
 }

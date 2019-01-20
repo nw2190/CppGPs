@@ -5,7 +5,7 @@
 #include <array>
 #include <memory>
 #include <random>
-#include <ctime>
+#include <chrono>
 #include <fstream>
 #include <boost/range/irange.hpp>
 #include "GPs.h"
@@ -16,6 +16,12 @@ using Vector = Eigen::VectorXd;
 // Declare undefined class for checking deduced types
 template<typename T>
 class CheckType;
+
+// Define function for retrieving time from chrono
+float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end)
+{
+  return static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count() / 1000000.0);
+};
 
 // Define squared exponential kernel between two points
 double kernel(Matrix & x, Matrix & y, Vector & params, int n)
@@ -29,7 +35,7 @@ double kernel(Matrix & x, Matrix & y, Vector & params, int n)
     }
 }
 
-// Define squared exponential kernel provided a distance
+// Define squared exponential kernel provided a squared distance as input
 //double distKernel(double d, Vector & params)
 //{ return params(0) * std::exp( -d / (2.0*std::pow(params(1),2))); }
 double distKernel(double d, Vector & params, int n)
@@ -63,15 +69,19 @@ int main(int argc, char const *argv[])
   using GP::GaussianProcess;
   using GP::linspace;
 
-
+  // Aliases for timing functions with chrono
+  using std::chrono::high_resolution_clock;
+  using time = high_resolution_clock::time_point;
+  
   // Set random seed
-  std::srand(static_cast<unsigned int>(std::time(0)));
+  std::srand(static_cast<unsigned int>(high_resolution_clock::now().time_since_epoch().count()));
+  //std::srand(static_cast<unsigned int>(std::time(0)));
 
   // Initialize Gaussian process model
   GaussianProcess model(1);
 
   // Specify observation data
-  int obsCount = 10;
+  int obsCount = 20;
   Matrix x = sampleUnif(0.0, 1.0, obsCount);
   Matrix y;
   auto noiseLevel = 0.05;
@@ -96,7 +106,15 @@ int main(int argc, char const *argv[])
   model.setDistKernel( std::make_unique<GP::distkernelfn>(distKernel) , params );
 
   // Fit kernel hyperparameters to data
-  model.fitModel();
+  time start = high_resolution_clock::now();
+  model.fitModel();  
+  time end = high_resolution_clock::now();
+  auto computationTime = getTime(start, end);
+
+  // Display computation time
+  cout << "\nComputation Time: ";
+  cout << computationTime << " s" << endl;
+
 
   // Get tuned hyperparameters
   auto optParams = model.getParams();

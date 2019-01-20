@@ -133,7 +133,7 @@ class LbfgsbSolver : public ISolver<TProblem, 1> {
     }
     dt_min = std::max<Scalar>(dt_min, (Scalar)0.0);
     t_old += dt_min;
-
+    #pragma omp parallel for
     for (int ii = i; ii < x_cauchy.rows(); ii++) {
       x_cauchy(sortedIndices[ii]) = x(sortedIndices[ii]) + t_old * d(sortedIndices[ii]);
     }

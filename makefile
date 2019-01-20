@@ -1,7 +1,7 @@
 CC=gcc
 CXX=g++
 RM=rm -f
-FLAGS=-std=c++17
+FLAGS=-std=c++17 -fopenmp
 CFLAGS=-c -Wall 
 HEADERS=GPs.h
 SOURCES=main.cpp GPs.cpp
