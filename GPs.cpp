@@ -25,12 +25,24 @@ void GP::GaussianProcess::computeCrossCov(Matrix & M, Matrix & v1, Matrix & v2, 
   // or apply standard binary kernel function component-wise
   if (useDistKernel)
     {
-      // Define lambda function to create unary operator (by clamping kernelParams argument)
+      /*
+      // Define lambda function to create unary operator (by clamping kernelParams argument)      
       auto lambda = [=,&p](double d)->double { return (*distKernel)(d, p, deriv); };
       for (auto j : boost::irange(0,m) )
         {
           M.col(j) = ((v1.rowwise() - v2.row(j)).rowwise().squaredNorm()).unaryExpr(lambda);          
         }
+      */
+
+      // Define lambda function to create unary operator (by clamping kernelParams argument)      
+      auto lambda = [=,&p](double d)->double { return (*distKernel)(d, p, deriv); };
+      int j;
+      #pragma omp parallel for
+      for ( j=0 ; j < m; j++ )
+        {
+          M.col(j) = ((v1.rowwise() - v2.row(j)).rowwise().squaredNorm()).unaryExpr(lambda);          
+        }
+
     }
   else
     {
@@ -179,7 +191,7 @@ void GP::GaussianProcess::fitModel()
   problem.setLowerBound(lb);
   problem.setUpperBound(ub);
 
-
+  
   // Initialize L-BFGS solver
   //cppoptlib::BfgsSolver<fminProblem> solver;
   cppoptlib::LbfgsbSolver<fminProblem> solver;

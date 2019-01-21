@@ -22,7 +22,7 @@ float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono:
 {
   return static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count() / 1000000.0);
 };
-
+/*
 // Define squared exponential kernel between two points
 double kernel(Matrix & x, Matrix & y, Vector & params, int n)
 {
@@ -45,6 +45,29 @@ double distKernel(double d, Vector & params, int n)
     case 0: return params(0) * std::exp( -d / (2.0*std::pow(params(1),2)));
     case 1: return std::exp( -d / (2.0*std::pow(params(1),2)));
     case 2: return params(0) * d / std::pow(params(1),3) * std::exp( -d / (2.0*std::pow(params(1),2)));
+    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
+    }
+}
+*/
+
+// Define squared exponential kernel between two points
+double kernel(Matrix & x, Matrix & y, Vector & params, int n)
+{
+  switch (n)
+    {
+    case 0: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
+    case 1: return (x-y).squaredNorm() / std::pow(params(0),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
+    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
+    }
+}
+
+// Define squared exponential kernel provided a squared distance as input
+double distKernel(double d, Vector & params, int n)
+{
+  switch (n)
+    {
+    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
+    case 1: return d / std::pow(params(0),3) * std::exp( -d / (2.0*std::pow(params(0),2)));
     default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
     }
 }
@@ -81,7 +104,7 @@ int main(int argc, char const *argv[])
   GaussianProcess model(1);
 
   // Specify observation data
-  int obsCount = 20;
+  int obsCount = 125;
   Matrix x = sampleUnif(0.0, 1.0, obsCount);
   Matrix y;
   auto noiseLevel = 0.05;
@@ -93,12 +116,15 @@ int main(int argc, char const *argv[])
   model.setObs(x,y);
 
   // Fix noise level
+  model.setNoise(std::pow(noiseLevel, 2));
   //model.setNoise(noiseLevel);
-  model.setNoise(std::sqrt(noiseLevel));
+  //model.setNoise(std::sqrt(noiseLevel));
   
   // Define initial kernel parameters
-  Vector params(2);
-  params << 1.0, 1.0;
+  //Vector params(2);
+  //params << 1.0, 1.0;
+  Vector params(1);
+  params << 1.0;
 
 
   // Define kernel for GP model
