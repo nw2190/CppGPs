@@ -104,7 +104,7 @@ int main(int argc, char const *argv[])
   GaussianProcess model(1);
 
   // Specify observation data
-  int obsCount = 125;
+  int obsCount = 250;
   Matrix x = sampleUnif(0.0, 1.0, obsCount);
   Matrix y;
   auto noiseLevel = 0.05;
