@@ -12,7 +12,7 @@ Profiling data is produced via the `callgrind` tool in the `valgrind` suite:
 ```
 valgrind --tool=callgrind --trace-children=yes ./Run
 ```
-__Note:__ This will take _much_ more time to run than the standard execution (e.g. 100x).
+__Note:__ This will take _much_ more time to run than the standard execution time (e.g. 100x).
 
 
 A graph visualization of the node-wise executation times in the program can then be created via:
@@ -23,4 +23,4 @@ perf script | c++filt | gprof2dot -s -n 5.0 -f perf | dot -Tpng -o output.png
 [//]: # (COMMENT: perf script | c++filt | python /usr/lib/python3.7/site-packages/gprof2dot.py -f perf | dot -Tpng -o output.png)
 
 
-_Note:_ The `-s` flag can also be removed from the `gprof2dot` call to show parameter types.  The `-n` flag is used to specify the percentage threshold for ommitting nodes.
+__Note:__ The `-s` flag can also be removed from the `gprof2dot` call to show parameter types.  The `-n` flag is used to specify the percentage threshold for ommitting nodes.
