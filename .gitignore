@@ -121,3 +121,7 @@ src_file
 Run
 *.csv
 *.o
+
+callgrind*
+perf*
+BAK*
