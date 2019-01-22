@@ -2,7 +2,7 @@ CC=gcc
 CXX=g++
 RM=rm -f
 #FLAGS=-std=c++17 -fopenmp -floop-parallelize-all -ftree-parallelize-loops=4
-FLAGS=-std=c++17 -fopenmp -ftree-vectorize -mavx -ftree-vectorizer-verbose=2
+FLAGS=-std=c++17 -g -fopenmp -ftree-vectorize -mavx -ftree-vectorizer-verbose=2
 CFLAGS=-c -Wall 
 HEADERS=GPs.h
 SOURCES=main.cpp GPs.cpp
