@@ -199,6 +199,10 @@ void GP::GaussianProcess::fitModel()
   // Specify stopping criteria
   cppoptlib::Criteria<double> crit = cppoptlib::Criteria<double>::defaults();
   crit.iterations = 5000;
+  crit.gradNorm = 10.0; //!< Minimum norm of gradient vector
+  //crit.xDelta = 0;      //!< Minimum change in parameter vector
+  //crit.fDelta = 0;      //!< Minimum change in cost function
+  //crit.condition = 0;
   solver.setStopCriteria(crit);
 
   // Specify initial parameter values for solver
