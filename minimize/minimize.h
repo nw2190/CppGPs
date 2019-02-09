@@ -4,9 +4,7 @@
 #include <chrono>
 #include <memory>
 #include <cmath>
-#include <random>
 #include <Eigen/Dense>
-#include <unsupported/Eigen/FFT>
 
 // Declare namespace for utils
 namespace minimize {
@@ -15,46 +13,14 @@ namespace minimize {
   using Matrix = Eigen::MatrixXd;
   using Vector = Eigen::VectorXd;
   using Eigen::VectorXcd;
-
   //using VectorXld = Eigen::Matrix<long double, Eigen::Dynamic, 1>;
 
   // Define aliases for target minimization function
   using minimizefn = double (*)(Vector, Vector&);
   using minimizeptr = std::unique_ptr<minimizefn>;    
 
-  // Aliases for timing functions with chrono
-  using std::chrono::high_resolution_clock;
-  using time = high_resolution_clock::time_point;
-
-  float getTime(time start, time end)
-  {
-    return static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count() / 1000000.0);
-  }
 
   
-  // Generate equally spaced points on an interval (Eigen::Vector)
-  template <typename T>
-  Eigen::Matrix<T, Eigen::Dynamic, 1> linspace(T a, T b, int N)
-  { return Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(N, a, b); }
-
-  
-  // Construct Toeplitz matrix from column (symmetric)
-  Matrix buildToep(const Vector & col, const Vector & row)
-  {
-    auto n = static_cast<int>(col.rows());
-    Matrix toep(n,n);
-    for (auto i : boost::irange(0,n))
-      {
-        toep.diagonal(i) = Eigen::VectorXd::Ones(n-i)*row[i];
-        toep.diagonal(-i) = Eigen::VectorXd::Ones(n-i)*col[i];
-      }
-    return toep;
-  };
-
-  // Construct Toeplitz matrix from column (symmetric)
-  Matrix buildToep(const Vector & col) { return buildToep(col, col); };
-
-
   // Define interpolation procedure for minimization algorithm
   double interpolate(double x2, double f2, double d2, double x3, double f3, double d3, double f0, double INT, double RHO)
   {
@@ -71,15 +37,11 @@ namespace minimize {
       {
         double denom = f4-f2-d2*(x4-x2);
         if ( std::abs(denom) < tolerance )
-          {
-            x3 = (x2+x4)/2;
-          }
+          // bisect
+          x3 = (x2+x4)/2;
         else
-          {
-            // quadratic interpolation
-            //x3 = x2-(0.5*d2*std::pow(x4-x2,2))/(denom);
-            x3 = x2-(0.5*d2*std::pow(x4-x2,2))/(f4-f2-d2*(x4-x2));            
-          }
+          // quadratic interpolation
+          x3 = x2-(0.5*d2*std::pow(x4-x2,2))/(denom);
       }
     else
       {
@@ -89,25 +51,17 @@ namespace minimize {
         double radical = B*B-A*d2*std::pow(x4-x2,2);
 
         if ( ( radical < 0 ) || ( std::abs(A) < tolerance ) )
-          {
-            x3 = (x2+x4)/2;
-          }
+          x3 = (x2+x4)/2;
         else
-          {
-            //x3 = x2+( std::sqrt(radical) - B)/A;
-            x3 = x2 + ( std::sqrt(B*B-A*d2*std::pow(x4-x2,2) ) - B ) / A;            
-          }
+          x3 = x2+( std::sqrt(radical) - B)/A;
       }
     
     // don't accept too close
     if ( x4-INT*(x4-x2) < x3 )
-      {
-        x3 = x4-INT*(x4-x2);
-      }
+      x3 = x4-INT*(x4-x2);
+    
     if ( x2+INT*(x4-x2) > x3 )
-      {
-        x3 = x2+INT*(x4-x2);
-      }
+      x3 = x2+INT*(x4-x2);
 
     return x3;
   };
@@ -126,32 +80,24 @@ namespace minimize {
     double radical = B*B-A*d1*(x2-x1);
     
     if ( radical < 0.0 )
-      {
-        x3 = x2*EXT;
-      }
+      x3 = x2*EXT;
     else if ( B + std::sqrt(radical) < tolerance )
-      {
-        x3 = x2*EXT;
-      }
+      x3 = x2*EXT;
     else
       {
-        //x3 = x1-d1*std::pow(x2-x1,2)/( B + std::sqrt(radical) );
-        x3 = x1-d1*std::pow(x2-x1,2)/( B + std::sqrt(B*B-A*d1*(x2-x1)) );
+        x3 = x1-d1*std::pow(x2-x1,2)/( B + std::sqrt(radical) );
         
         if ( ( x3 < 0 ) || ( x3 > x2*EXT ) )
-          {
-            x3 = x2*EXT;
-          }
+          x3 = x2*EXT;
         else if ( x3 < x2+INT*(x2-x1) )
-          {
-            x3 = x2+INT*(x2-x1);
-          }
+          x3 = x2+INT*(x2-x1);
       }
 
     return x3;
   };
 
 
+  
   // Conjugate gradient minimization algorithm
   void cg_minimize(Vector & X, minimizeptr func, Vector & D, int length, double SIG=0.1, double EXT=3.0, double INT=0.01)
   {
@@ -169,26 +115,22 @@ namespace minimize {
     Vector df0(N);
     double f0 = (*func)(X, df0);
     
-    // initial search direction (steepest) and slope
-    // and the initial step is 1/(|s|+1)
+    // initial search direction (steepest) and slope 
     Vector s = -df0;
     double d0 = -s.transpose()*s;
+
+    // initial step is 1/(|s|+1)
     double x3 = 1/(1-d0);     
 
-    // declare variables in main loop
+    // declare placeholders for storing optimal values
     Vector X0(N);
     double F0;
     Vector dF0(N);
+
+    // declare variables in main loop
     int M;
     bool continue_extrap;
-    double x1;
-    double f1;
-    double d1;
-    double x2;
-    double f2;
-    double d2;
-    double f3;
-    double d3;
+    double x1, f1, d1, x2, f2, d2, f3, d3;
     Vector df3(N);
 
     // "realmin" = smallest positive normalized floating-point number in IEEE double precision format
@@ -231,9 +173,7 @@ namespace minimize {
 
             // are we done extrapolating?
             if ( ( ( d3 > SIG*d0 ) || ( f3 > f0+x3*RHO*d0 ) ) || ( M == 0 ) )
-              {
                 continue_extrap = false;
-              }
                 
             // move point 2 to point 1
             x1 = x2;
@@ -266,43 +206,48 @@ namespace minimize {
                 dF0 = df3;
               }
 
-            M = M - 1;        
-            d3 = df3.transpose()*s;    // new slope
+            // decrement line-search count
+            M = M - 1;
+            
+            // new slope            
+            d3 = df3.transpose()*s;
+            
           } // END INTERPOLATE
 
 
 
         //  START COMPUTE NEW SEARCH DIRECTION
-        if ( ( std::abs(d3) < -SIG*d0 ) && ( f3 < f0+x3*RHO*d0 ) )            // if line search succeeded
+        if ( ( std::abs(d3) < -SIG*d0 ) && ( f3 < f0+x3*RHO*d0 ) )            
           {
+            // if line search succeeded
             // update variables            
             X = X+x3*s;
             f0 = f3;
             
             // Polack-Ribiere CG direction
-            //s = ( (df3.transpose()*df3 - df0.transpose()*df3).array() * ( df0.transpose()*df0*s - df3 ).cwiseInverse().array() ).matrix();
             s = ( (df3.transpose()*df3 - df0.transpose()*df3)(0) / (df0.transpose()*df0)(0) )*s - df3;
-            //s = (np.matmul( np.transpose(df3) , df3 )  -  np.matmul( np.transpose(df0) , df3 ))  /  (np.matmul( np.transpose(df0) , df0 ))*s - df3;
-            
-            df0 = df3;                                              // swap derivatives
+
+            // swap derivatives
+            df0 = df3;
             d3 = d0;
             d0 = df0.transpose()*s;
-            if ( d0 > 0 )                                              // new slope must be negative
+
+            // new slope must be negative
+            if ( d0 > 0 )
               {
+                // otherwise use steepest direction
                 s = -df0;
-                d0 = -s.transpose()*s;       // otherwise use steepest direction
+                d0 = -s.transpose()*s;
               }
 
+            // slope ratio but max RATIO
             if ( RATIO <  d3/(d0-realmin) )
-              {
                 x3 = x3 * RATIO;
-              }
             else
-              {
                 x3 = x3 * d3/(d0-realmin);
-              }
-            //x3 = x3 * min(RATIO, d3/(d0-realmin));                  // slope ratio but max RATIO
-            ls_failed = false;                                          // this line search did not fail
+
+            // this line search did not fail
+            ls_failed = false;                                          
           }
         
         else
@@ -311,24 +256,25 @@ namespace minimize {
             X = X0;
             f0 = F0;
             df0 = dF0;                             
-            
-            if ( ( ls_failed ) || ( i > length ) )        // line search failed twice in a row
-              {
-                request_break = true;                               // or we ran out of time, so we give up
-              }
 
+            // line search failed twice in a row
+            // or we ran out of time, so we give up
+            if ( ( ls_failed ) || ( i > length ) )        
+                request_break = true;                               
+
+            // try steepest
             s = -df0;
-            d0 = -s.transpose()*s;           // try steepest
-            x3 = 1/(1-d0);                     
-            ls_failed = true;                   // this line search failed
+            d0 = -s.transpose()*s;           
+            x3 = 1/(1-d0);
+            
+            // this line search failed
+            ls_failed = true;                   
         
           } // END COMPUTE NEW SEARCH DIRECTION
 
 
       }  // END MAIN LOOP
     
-
-    //std::cout << "\nIterations: " << i << std::endl;
   };
   
 

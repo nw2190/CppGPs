@@ -21,8 +21,6 @@ double func(Vector X, Vector & D)
 }
 
 
-
-
 // Define function for retrieving time from chrono
 float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end)
 {
