@@ -156,6 +156,8 @@ int main(int argc, char const *argv[])
 
   RBF kernel;
   model.setKernel(kernel);
+  //model.setKernel(std::make_unique<GP::Kernel>(kernel));
+
 
   // Define kernel for GP model
   //model.setKernel( std::make_unique<GP::kernelfn>(kernel) , params );
@@ -176,7 +178,8 @@ int main(int argc, char const *argv[])
   cout << "\nOptimized Hyperparameters:" << endl << optParams.transpose() << "  ";
   auto noiseL = model.getNoise();
   cout << "(Noise = " << noiseL << ")\n" << endl;
-  
+
+
 
   /*
   // Define test mesh for predictions

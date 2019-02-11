@@ -22,55 +22,61 @@ namespace GP {
 
   // Define abstract class for covariance kernels
 
-  /*
+
   class Kernel 
   {    
   public:
     // Constructors
-    //Kernel() : kernelParams(Vector(0)) , paramCount(0) { };
-    //Kernel(Vector p, int n);
-    virtual void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv);
-    
-    //int getParamCount() { return paramCount; } ;
-    //Vector getParams() { return kernelParams; };
-    //void setParams(Vector params) { kernelParams = params; };
-    virtual int getParamCount();
-    virtual Vector getParams();
-    virtual void setParams(Vector params);
-    //Vector kernelParams = Vector(0);
-    //int paramCount = 0;
-  private:
-    virtual double evalKernel(Matrix&, Matrix&, Vector&, int);
-    virtual double evalDistKernel(double, Vector&, int);
+    Kernel(Vector p, int c) : kernelParams(p) , paramCount(c) { };
+    //Kernel(const Kernel & k) : kernelParams(k.kernelParams), paramCount(k.paramCount) { };
+    virtual void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv) = 0;
+    int getParamCount() { return paramCount; } ;
+    Vector getParams() { return kernelParams; };
+    void setParams(Vector params) { kernelParams = params; };
+  protected:
+    Vector kernelParams;
+    int paramCount;
+    virtual double evalKernel(Matrix&, Matrix&, Vector&, int) = 0;
+    virtual double evalDistKernel(double, Vector&, int) = 0;
   };
-  */
 
 
   // Define class for radial basis function (RBF) covariance kernel
-  class RBF // : public Kernel
+  class RBF : public Kernel
+  {
+  public:
+    // Constructors
+    RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
+    //RBF(const RBF & k) : Kernel(std::move(k)) { };
+    //RBF(const RBF & k) : kernelParams(k.kernelParams), paramCount(paramCount) { };
+    void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv);
+  private:
+    double evalKernel(Matrix&, Matrix&, Vector&, int);
+    double evalDistKernel(double, Vector&, int);
+  };
+
+
+  /*
+  // Define class for radial basis function (RBF) covariance kernel
+  class RBF
   {
   public:
     // Constructors
     RBF() : kernelParams(Vector(1)) , paramCount(1) { kernelParams(0)=1.0; };
-    //RBF() : Kernel(Vector(1),1) { kernelParams = Vector(1); kernelParams(0)=1.0; paramCount = 1; };
     void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv);
-
     int getParamCount() { return paramCount; } ;
     Vector getParams() { return kernelParams; };
     void setParams(Vector params) { kernelParams = params; };
 
-    //int getParamCount();
-    //void setParams(Vector params);
-    //Vector getParams();
+  private:
     Vector kernelParams;
     int paramCount;
-    
-  private:
+
     double evalKernel(Matrix&, Matrix&, Vector&, int);
     double evalDistKernel(double, Vector&, int);
-    //Vector params;
-    //int paramCount;
   };
+  */
+  
   
   // Define class for Gaussian processes
   class GaussianProcess : public minimize::GradientObj
@@ -80,15 +86,16 @@ namespace GP {
     GaussianProcess() : dimIn(1) { }
     GaussianProcess(int din) : dimIn(din) { }
     // Copy Constructor
+    /*
     GaussianProcess(const GaussianProcess & m) :
-      kernel(m.kernel),
+      kernel( (m.kernel) ?  std::move(m.kernel) : nullptr ) ,
       noiseLevel(m.noiseLevel),
       fixedNoise(m.fixedNoise),
       obsX(m.obsX) ,
       obsY(m.obsY)
-      { N = static_cast<int>(obsX.rows()); }
-      //{ std::cout << "\nCOPY\n"; N = static_cast<int>(obsX.rows()); }
-
+    { N = static_cast<int>(obsX.rows()); }
+    //{ std::cout << "\nCOPY\n"; N = static_cast<int>(obsX.rows()); }
+    */
 
     // Get and show methods
     double evalNLML(const Vector & p); //, Matrix & alpha);
@@ -96,13 +103,14 @@ namespace GP {
     //Matrix getPredMean() { return predMean; }
     //Matrix getPredVar() { return predCov.diagonal() + noiseLevel*Eigen::VectorXd::Ones(predMean.size()); }
     //Matrix getSamples(int count=10);
-    decltype(auto) getParams() { return kernel.getParams(); }
+    decltype(auto) getParams() { return (*kernel).getParams(); }
     double getNoise() { return noiseLevel; }
     
     // Set methods
     void setObs(Matrix & x, Matrix & y) { obsX = x; obsY = y; N = static_cast<int>(x.rows()); }
     //void setKernel(Kernel k) { kernel = k; }
-    void setKernel(RBF k) { kernel = k; }
+    void setKernel(RBF & k) { kernel = &k; }
+    //void setKernel(std::unique_ptr<Kernel> k) { kernel = std::move(k); }
     void setPred(Matrix & px) { predX = px; }
 
     // NOISE
@@ -127,8 +135,9 @@ namespace GP {
     int N = 0;
 
     // Kernel and covariance matrix
-    //Kernel kernel;
-    RBF kernel;    
+    //std::unique_ptr<Kernel> kernel;
+    Kernel * kernel;
+    //RBF kernel;    
     double noiseLevel = 0.0;
     bool fixedNoise = false;
     double jitter = 1e-7;

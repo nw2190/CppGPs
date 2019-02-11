@@ -85,7 +85,6 @@ void GP::RBF::computeCov(Matrix & K, Matrix & D, Vector & params, int deriv)
 
 
 
-
 // Precompute distance matrix to avoid repeated calculations during optimization procedure
 void GP::GaussianProcess::computeDistMat()
 {
@@ -224,7 +223,7 @@ double GP::GaussianProcess::evalNLML(const Vector & p) //, Matrix & alpha)
   // Possibly not needed for NLML calculation ... ?
   auto n = static_cast<int>(obsX.rows());
 
-  int paramCount = kernel.getParamCount();
+  int paramCount = (*kernel).getParamCount();
   
   auto pcopy = static_cast<Vector>(p);
   if (!fixedNoise)
@@ -241,7 +240,7 @@ double GP::GaussianProcess::evalNLML(const Vector & p) //, Matrix & alpha)
       //computeChol(noise);
       //computeCholDirect(noise,params);
       K.resize(n,n);
-      kernel.computeCov(K, distMatrix, params, 0);
+      (*kernel).computeCov(K, distMatrix, params, 0);
       cholesky = ( K + (noise+jitter)*Matrix::Identity(n,n) ).llt();
     }
   else
@@ -256,7 +255,7 @@ double GP::GaussianProcess::evalNLML(const Vector & p) //, Matrix & alpha)
       //computeCov(params);
       //computeChol();
       K.resize(n,n);
-      kernel.computeCov(K, distMatrix, params, 0);
+      (*kernel).computeCov(K, distMatrix, params, 0);
       cholesky = ( K + (noiseLevel+jitter)*Matrix::Identity(n,n) ).llt();
     }
 
@@ -282,7 +281,7 @@ void GP::GaussianProcess::evalDNLML(const Vector & p, Vector & g) //, Matrix & a
   auto n = static_cast<int>(obsX.rows());
   auto pcopy = static_cast<Vector>(p);
 
-  int paramCount = kernel.getParamCount();
+  int paramCount = (*kernel).getParamCount();
   
   Vector params;
   if (!fixedNoise)
@@ -315,7 +314,7 @@ void GP::GaussianProcess::evalDNLML(const Vector & p, Vector & g) //, Matrix & a
       //g[i-shift] = 0.5 * ((cholesky.solve(Matrix::Identity(n,n)) - _alpha*_alpha.transpose())*dK_i ).trace() ;
       
       //computeCrossCov(dK_i, obsX, obsX, params, i, true);
-      kernel.computeCov(dK_i, distMatrix, params, i);
+      (*kernel).computeCov(dK_i, distMatrix, params, i);
       //g[i-shift] = 0.5 * (term * dK_i ).trace() ;
       trace = 0.0;
       for (auto j : boost::irange(0,n))
@@ -332,7 +331,7 @@ void GP::GaussianProcess::evalDNLML(const Vector & p, Vector & g) //, Matrix & a
 void GP::GaussianProcess::fitModel()
 {
   // Get combined parameter/noise vector size
-  int paramCount = kernel.getParamCount();
+  int paramCount = (*kernel).getParamCount();
   int n = (fixedNoise) ? static_cast<int>(paramCount) : static_cast<int>(paramCount) + 1 ;
 
   // Precompute distance matrix
@@ -354,7 +353,8 @@ void GP::GaussianProcess::fitModel()
   //int length = 1000;
   //double INT = 0.1;
   //int MAX = 10;
-  int MAX = 40;
+  //int MAX = 40;
+  int MAX = 20;
   double INT = 0.01;
   int length = 1000;
 
@@ -372,7 +372,7 @@ void GP::GaussianProcess::fitModel()
       for ( auto i : boost::irange(0,paramCount) )
         optParams(i) = std::exp(optParams(i));
 
-      kernel.setParams(optParams);
+      (*kernel).setParams(optParams);
     }
   else
     {
@@ -382,7 +382,7 @@ void GP::GaussianProcess::fitModel()
       for ( auto i : boost::irange(0,paramCount) )
         optParams(i) = std::exp(optParams(i));
 
-      kernel.setParams(optParams);
+      (*kernel).setParams(optParams);
     }
 
 
