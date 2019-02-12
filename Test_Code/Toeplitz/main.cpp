@@ -73,7 +73,10 @@ int main(int argc, char const *argv[])
   //model.setNoise(std::pow(noiseLevel, 2));
   //model.setNoise(noiseLevel);
   //model.setNoise(std::sqrt(noiseLevel));
-  model.setNoise(0.000805);
+  //model.setNoise(0.000805);
+  
+  //model.setNoise(0.00019);
+  model.setNoise(std::sqrt(0.00019));
   
   // Define initial kernel parameters
   //Vector params(2);
@@ -123,6 +126,14 @@ int main(int argc, char const *argv[])
   // Get sample paths from posterior
   int sampleCount = 100;
   Matrix samples = model.getSamples(sampleCount);
+
+  // Compare NLML results
+  Vector params1 = model.getParams();
+  cout << model.evalNLML(params1) << endl;
+  Vector params2(1);
+  params2 << 0.168;
+  cout << model.evalNLML(params2) << endl;
+
 
   
   // Save true and predicted means/variances to file

@@ -219,9 +219,12 @@ void GP::GaussianProcess::fitModel()
   // Specify precision of minimization algorithm
   double SIG = 0.1;
   double EXT = 3.0;
-  int MAX = 20;
+  //int MAX = 20;
+  int MAX = 30;
+  //double INT = 0.01;
   double INT = 0.01;
-  int length = 1000;
+  //int length = 1000;
+  int length = 100;
 
   // Define restart count and hyperparameter bounds
   int restartCount = 10;
