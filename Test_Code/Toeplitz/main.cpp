@@ -24,89 +24,12 @@ float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono:
 {
   return static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count() / 1000000.0);
 };
-/*
-// Define squared exponential kernel between two points
-double kernel(Matrix & x, Matrix & y, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return params(0) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(1),2)));
-    case 1: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(1),2)));
-    case 2: return params(0) * (x-y).squaredNorm() / std::pow(params(1),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(1),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-}
-
-// Define squared exponential kernel provided a squared distance as input
-//double distKernel(double d, Vector & params)
-//{ return params(0) * std::exp( -d / (2.0*std::pow(params(1),2))); }
-double distKernel(double d, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return params(0) * std::exp( -d / (2.0*std::pow(params(1),2)));
-    case 1: return std::exp( -d / (2.0*std::pow(params(1),2)));
-    case 2: return params(0) * d / std::pow(params(1),3) * std::exp( -d / (2.0*std::pow(params(1),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-}
-*/
-
-// Define squared exponential kernel between two points
-/*
-double kernel(Matrix & x, Matrix & y, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
-    case 1: return (x-y).squaredNorm() / std::pow(params(0),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-}
-*/
-
-// Define squared exponential kernel provided a squared distance as input
-/*
-double distKernel(double d, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
-    case 1: return d / std::pow(params(0),3) * std::exp( -d / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-}
-*/
-
-// Define squared exponential kernel provided a squared distance as input
-//
-// REVISION:  Optimize w.r.t. theta = log(l) for stability.
-//
-// ==> .../ l^2  instead of .../ l^3
-//
-/*
-double distKernel(double d, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
-    case 1: return d / std::pow(params(0),2) * std::exp( -d / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-}
-*/
 
 // Specify the true target function
 double targetFunc(double x)
 {
   return std::sin(3.0*(x-0.1))*(0.5-(x-0.1))*15.0;
 }
-
-// Define function for uniform sampling
-//Matrix sampleUnif(double a=0.0, double b=1.0, int N=1)
-//{
-//  return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
-//}
 
 // Example using GP class for regression
 int main(int argc, char const *argv[])
