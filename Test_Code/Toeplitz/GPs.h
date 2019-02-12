@@ -3,6 +3,7 @@
 #define _GPS_H
 #include <iostream>
 #include <array>
+#include <vector>
 #include <memory>
 #include <cmath>
 #include <Eigen/Dense>
@@ -22,6 +23,7 @@ namespace GP {
 
   // Define function for sampling uniform distribution on interval
   Matrix sampleUnif(double a=0.0, double b=1.0, int N=1);
+  Vector sampleUnifVector(Vector lbs, Vector ubs);
   
   // Define abstract class for covariance kernels
   class Kernel 
@@ -30,7 +32,8 @@ namespace GP {
     // Constructors
     Kernel(Vector p, int c) : kernelParams(p) , paramCount(c) { };
     virtual ~Kernel() = default;
-    virtual void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv) = 0;
+    //virtual void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv) = 0;
+    virtual std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, bool evalGrad=false) = 0;
     virtual void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params) = 0;
     int getParamCount() { return paramCount; } ;
     Vector getParams() { return kernelParams; };
@@ -49,7 +52,8 @@ namespace GP {
   public:
     // Constructors
     RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
-    void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv);
+    //void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv);
+    std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, bool evalGrad=false);
     void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params);
   private:
     double evalKernel(Matrix&, Matrix&, Vector&, int);
@@ -99,8 +103,11 @@ namespace GP {
     */
 
     // Get and show methods
-    double evalNLML(const Vector & p); //, Matrix & alpha);
-    void evalDNLML(const Vector & p, Vector & g); //, Matrix & alpha);
+    double computeNLML(const Vector & p, double noise);
+    double computeNLML(const Vector & p);
+    double evalNLML(const Vector & p); 
+    double evalNLML(const Vector & p, Vector & g, bool evalGrad=false); 
+    //void evalDNLML(const Vector & p, Vector & g); //, Matrix & alpha);
     Matrix getPredMean() { return predMean; }
     Matrix getPredVar() { return predCov.diagonal() + noiseLevel*Eigen::VectorXd::Ones(predMean.size()); }
     Matrix getSamples(int count=10);
@@ -114,6 +121,7 @@ namespace GP {
 
     // NOISE
     void setNoise(double noise) { fixedNoise = true; noiseLevel = noise; }
+    void setBounds(Vector & lbs, Vector & ubs) { lowerBounds = lbs; upperBounds = ubs; }
     //void setNoise(double noise) { fixedNoise = true; noiseLevel = 0.0; }
     
     // Compute methods
@@ -121,7 +129,8 @@ namespace GP {
     void fitModel();
 
     // Define method for superclass "GradientObj" used by minimization algorithm
-    void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X); evalDNLML(X,D); };
+    //void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X); evalDNLML(X,D); };
+    void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
 
     void computeDistMat();
 
@@ -140,6 +149,9 @@ namespace GP {
     double jitter = 1e-7;
     Matrix K;
     Eigen::LLT<Matrix> cholesky;
+
+    Vector lowerBounds;
+    Vector upperBounds;
 
     // Store squared distance matrix and alpha for NLML/DNLML calculations
     Matrix distMatrix;

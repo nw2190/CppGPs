@@ -4,6 +4,7 @@
 #include <cmath>
 #include <string>
 #include <array>
+#include <vector>
 #include <memory>
 #include <random>
 #include <chrono>
@@ -76,7 +77,8 @@ int main(int argc, char const *argv[])
   //model.setNoise(0.000805);
   
   //model.setNoise(0.00019);
-  model.setNoise(std::sqrt(0.00019));
+  
+  //model.setNoise(std::sqrt(0.00019));
   
   // Define initial kernel parameters
   //Vector params(2);
@@ -89,6 +91,16 @@ int main(int argc, char const *argv[])
   model.setKernel(kernel);
   //model.setKernel(std::make_unique<GP::Kernel>(kernel));
   //model.setKernel(std::make_shared<GP::Kernel>(kernel));
+
+  Vector lbs(2);
+  //lbs << 0.001 , 1.0;
+  //lbs << 0.0001 , 0.1;
+  //lbs << 0.0001 , 0.01;
+  lbs << 0.0001 , 0.01;
+  Vector ubs(2);
+  //ubs << 5.0 , 1.0;
+  ubs << 5.0 , 5.0;
+  model.setBounds(lbs, ubs);
 
 
   // Define kernel for GP model
@@ -122,6 +134,11 @@ int main(int argc, char const *argv[])
   model.predict();
   Matrix pmean = model.getPredMean();
   Matrix pvar = model.getPredVar();
+  Matrix pstd = (pvar.array().sqrt()).matrix();
+  //cout << "\nPredicted Standard Deviations:\n";
+  //for ( auto i : boost::irange(0,10) )
+  //  cout <<  std::sqrt(pvar(i)) << " ";
+  //cout << endl;
 
   // Get sample paths from posterior
   int sampleCount = 100;
@@ -129,12 +146,26 @@ int main(int argc, char const *argv[])
 
   // Compare NLML results
   Vector params1 = model.getParams();
-  cout << model.evalNLML(params1) << endl;
+  cout << model.computeNLML(params1) << endl;
   Vector params2(1);
   params2 << 0.168;
-  cout << model.evalNLML(params2) << endl;
+  cout << model.computeNLML(params2, 0.00019) << endl;
 
+  /*
+  // Test STL vector for Eigen matrices
+  std::vector<Matrix> matrixVector;
+  Matrix M1(2,2);
+  M1 << 1, 1, 1, 1;
+  Matrix M2(2,2);
+  M2 << 2, 2, 2, 2;
 
+  matrixVector.push_back(M1);
+  matrixVector.push_back(M2);
+
+  cout << "\nOutput of begin and end: \n"; 
+  for (auto i = matrixVector.begin(); i != matrixVector.end(); ++i) 
+    cout << endl << *i << endl; 
+  */
   
   // Save true and predicted means/variances to file
   std::string outputFile = "predictions.csv";
@@ -143,7 +174,7 @@ int main(int argc, char const *argv[])
   fout.open(outputFile);
   for ( auto i : boost::irange(0,predCount) )
     {
-      fout << testMesh(i) << "," << trueSoln(i) << "," << pmean(i) << "," << pvar(i) << "\n";
+      fout << testMesh(i) << "," << trueSoln(i) << "," << pmean(i) << "," << pstd(i) << "\n";
     }
   fout.close();
 

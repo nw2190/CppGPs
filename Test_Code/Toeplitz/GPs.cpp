@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include <array>
+#include <vector>
 #include <chrono>
 #include <memory>
 #include <random>
@@ -43,21 +44,22 @@ double GP::RBF::evalDistKernel(double d, Vector & params, int n)
 
 // Compute cross covariance between two input vectors using kernel parameters p
 // (note: values of deriv > 0 correspond to derivative calculations)
-void GP::RBF::computeCov(Matrix & K, Matrix & D, Vector & params, int deriv)
+//void GP::RBF::computeCov(Matrix & K, Matrix & D, Vector & params, int deriv)
+std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & D, Vector & params, bool evalGrad)
 {
-  // Get matrix input observation count
-  auto n = static_cast<int>(D.rows());
-
   // Define lambda function to create unary operator (by clamping kernelParams argument)      
-  auto lambda = [=,&params](double d)->double { return evalDistKernel(d, params, deriv); };
+  auto lambda = [=,&params](double d)->double { return evalDistKernel(d, params, 0); };
+  K.noalias() = D.unaryExpr(lambda);
 
-  for ( auto j : boost::irange(0,n) )
+  // Compute gradient list if "evalGrad=true"
+  std::vector<Matrix> gradList;
+  if ( evalGrad )
     {
-      K.col(j) = (D.col(j)).unaryExpr(lambda);          
+      Matrix dK_i = ( D.array() * (1/std::pow(params(0),2)) * K.array() ).matrix();
+      gradList.push_back(dK_i);
     }
 
-  // Direct evaluation on individual coefficients
-  //K = distMatrix.unaryExpr(lambda);
+  return gradList;
   
 };
 
@@ -91,110 +93,160 @@ void GP::GaussianProcess::computeDistMat()
     }
 }
 
-
-// Evaluate NLML for specified kernel hyperparameters p
-// (note: alpha is used to share calculations with DNLML function)
-double GP::GaussianProcess::evalNLML(const Vector & p)
+// Evaluate NLML [public interface]
+double GP::GaussianProcess::computeNLML(const Vector & p, double noise)
 {
-  // Get matrix input observation count
-  // Possibly not needed for NLML calculation ... ?
-  auto n = static_cast<int>(obsX.rows());
-
+  // Get hyperparameter count ( + noise parameter )
   int paramCount = (*kernel).getParamCount();
-  
-  auto pcopy = static_cast<Vector>(p);
-  if (!fixedNoise)
+  int augParamCount = (fixedNoise) ? static_cast<int>(paramCount) : static_cast<int>(paramCount) + 1 ;
+
+  // Compute log-hyperparameters
+  Vector logparams(augParamCount);
+  //logparams(0) = std::log(noiseLevel);
+  if ( !fixedNoise )
     {
-      auto noise = static_cast<double>((pcopy.head(1))[0]);
-      auto params = static_cast<Vector>( pcopy.tail(paramCount) );        
-
-      // ASSUME OPTIMIZATION OVER LOG VALUES
-      for ( auto i : boost::irange(0,paramCount) )
-        params(i) = std::exp(params(i));
-
-      // Compute covariance matrix and store Cholesky factor
-      K.resize(n,n);
-      (*kernel).computeCov(K, distMatrix, params, 0);
-      cholesky = ( K + (noise+jitter)*Matrix::Identity(n,n) ).llt();
+      logparams(0) = std::log(noise);
+      for ( auto i : boost::irange(1,augParamCount) )
+        logparams(i) = std::log(p(i-1));
     }
   else
     {
-      auto params = static_cast<Vector>( pcopy );
-
-      // ASSUME OPTIMIZATION OVER LOG VALUES
       for ( auto i : boost::irange(0,paramCount) )
-        params(i) = std::exp(params(i));
-
-      // Compute covariance matrix and store Cholesky factor
-      K.resize(n,n);
-      (*kernel).computeCov(K, distMatrix, params, 0);
-      cholesky = ( K + (noiseLevel+jitter)*Matrix::Identity(n,n) ).llt();
+        logparams(i) = std::log(p(i));
     }
+
+  //std::cout << "\nNoise / Params:\n" << noiseLevel << " " << p.transpose() << std::endl;
+  //std::cout << "\nLog Params:\n" << logparams.transpose() << std::endl << std::endl;
+
+  // Evaluate NLML using log-hyperparameters
+  return evalNLML(logparams);
+}
+
+// Evaluate NLML with default noise level [public interface]
+double GP::GaussianProcess::computeNLML(const Vector & p)
+{
+  return computeNLML(p, noiseLevel);
+}
+
+
+// Evaluate NLML for specified kernel hyperparameters p
+// (note: alpha is used to share calculations with DNLML function)
+double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad)
+{
+  // Get matrix input observation count
+  auto n = static_cast<int>(obsX.rows());
+
+  // Get hyperparameter count ( + noise parameter )
+  int paramCount = (*kernel).getParamCount();
+  int augParamCount = (fixedNoise) ? static_cast<int>(paramCount) : static_cast<int>(paramCount) + 1 ;
+
+  // ASSUME OPTIMIZATION OVER LOG VALUES
+  auto pcopy = static_cast<Vector>(p);
+  for ( auto i : boost::irange(0,augParamCount) )
+    pcopy(i) = std::exp(pcopy(i));
+
+  double noise;
+  Vector params;
+  if (!fixedNoise)
+    {
+      noise = static_cast<double>((pcopy.head(1))[0]);
+      params = static_cast<Vector>( pcopy.tail(paramCount) );        
+    }
+  else
+    {
+      noise = noiseLevel;
+      params = static_cast<Vector>( pcopy );
+    }
+
+  // Compute covariance matrix and store Cholesky factor
+  K.resize(n,n);
+  auto gradList = (*kernel).computeCov(K, distMatrix, params, evalGrad);
+  cholesky = ( K + (noise+jitter)*Matrix::Identity(n,n) ).llt();
 
   // Store alpha for DNLML calculation
   _alpha = cholesky.solve(obsY);
 
   // Compute NLML value
-  auto NLML_value = 0.5*(obsY.transpose()*_alpha)(0)  +  0.5*static_cast<Matrix>(cholesky.matrixL()).diagonal().array().log().sum() + 0.5*std::log(2*PI);
+  auto NLML_value = 0.5*(obsY.transpose()*_alpha)(0) + static_cast<Matrix>(cholesky.matrixL()).diagonal().array().log().sum() + 0.5*n*std::log(2*PI);
+
+  if ( evalGrad )
+    {
+
+      // Precompute the multiplicative term in derivative expressions
+      Matrix term = cholesky.solve(Matrix::Identity(n,n)) - _alpha*_alpha.transpose();
+      double trace;
+      
+      // Specify noise derivative if using trainable noise
+      // and adjust array indices using shift accordingly
+      int index = 0;
+      if (!fixedNoise)
+        {
+          // g(0) = -0.5 * ( _alpha*_alpha.transpose() - cholesky.solve(noise*Matrix::Identity(n,n)) ).trace() ;
+          Matrix dK_noise = noise*Matrix::Identity(n,n);
+          
+          trace = 0.0;
+          for (auto j : boost::irange(0,n))
+            {
+              trace += term.row(j)*(dK_noise.col(j));
+            }
+
+          g(index) = 0.5*trace;
+          index++;
+        }
+
+      //for (auto i : boost::irange(1,paramCount+1))
+      for (auto dK_i = gradList.begin(); dK_i != gradList.end(); ++dK_i) 
+        {
+
+          // Compute trace of full matrix
+          //g[i-shift] = 0.5 * (term * dK_i ).trace() ;
+
+          // Try computing only diagonal entries for trace calculation
+          trace = 0.0;
+          for (auto j : boost::irange(0,n))
+            {
+              trace += term.row(j)*((*dK_i).col(j));
+            }
+
+          g(index) = 0.5*trace;
+          index++;
+        }
+
+    }
 
   return NLML_value;
 }
 
-
-// Evaluate derivatives of NLML for specified kernel hyperparameters
-// (note: alpha is used to retrieve calculations from NLML function)
-void GP::GaussianProcess::evalDNLML(const Vector & p, Vector & g)
+// Define simplified interface for evaluating NLML without gradient calculation
+double GP::GaussianProcess::evalNLML(const Vector & p)
 {
-  // Get matrix input observation count
-  auto n = static_cast<int>(obsX.rows());
-  auto pcopy = static_cast<Vector>(p);
-
-  int paramCount = (*kernel).getParamCount();
-  
-  Vector params;
-  if (!fixedNoise)
-    params = static_cast<Vector>( pcopy.tail(paramCount) );
-  else
-    params = static_cast<Vector>(pcopy);
-
-  // ASSUME OPTIMIZATION OVER LOG VALUES
-  for ( auto i : boost::irange(0,paramCount) )
-    params(i) = std::exp(params(i));
-
-  // Specify noise derivative if using trainable noise
-  // and adjust array indices using shift accordingly
-  int shift = 0;
-  if (!fixedNoise)
-    g[0] = -0.5 * ( _alpha*_alpha.transpose() - cholesky.solve(Matrix::Identity(n,n)) ).trace() ;
-  else
-    shift = 1;
-
-  Matrix term = cholesky.solve(Matrix::Identity(n,n)) - _alpha*_alpha.transpose();
-  Matrix dK_i(n,n);
-  double trace;
-  for (auto i : boost::irange(1,paramCount+1))
-    {
-      // Compute derivative of covariance matrix
-      (*kernel).computeCov(dK_i, distMatrix, params, i);
-
-      // Compute trace of full matrix
-      //g[i-shift] = 0.5 * (term * dK_i ).trace() ;
-
-      // Try computing only diagonal entries for trace calculation
-      trace = 0.0;
-      for (auto j : boost::irange(0,n))
-        {
-          trace += term.row(j)*dK_i.col(j);
-        }
-      
-      g[i-shift] = 0.5*trace;
-    }
+  Vector nullGrad(0);
+  return evalNLML(p,nullGrad,false);
 }
+
 
 // Define function for uniform sampling
 Matrix GP::sampleUnif(double a, double b, int N)
 {
   return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
+}
+
+// Define function for uniform sampling [Vectors]
+Vector GP::sampleUnifVector(Vector lbs, Vector ubs)
+{
+  auto n = static_cast<int>(lbs.rows());
+  Vector sampleVector(n);
+  Vector samples = Eigen::MatrixXd::Random(n,1);
+  double a;
+  double b;
+  for ( auto i : boost::irange(0,n) )
+    {
+      // NOTE: This can easily be vectorized
+      a = lbs(i);
+      b = ubs(i);
+      sampleVector(i) = (b-a)*(samples(i) * 0.5 + 0.5*samples(i)) + a*samples(i);
+    }
+  return sampleVector;
 }
 
 
@@ -207,29 +259,51 @@ void GP::GaussianProcess::fitModel()
 
   // Precompute distance matrix
   computeDistMat();
-  
+
   // Specify initial parameter values for solver
-  Vector x = static_cast<Vector>(Eigen::VectorXd::Ones(augParamCount));
-  if (!fixedNoise)
-    x[0] = 0.001;
-  
+  //Vector x = static_cast<Vector>(Eigen::VectorXd::Ones(augParamCount));
+  //if (!fixedNoise)
+  //  x(0) = -3;
+  //x[0] = 0.001;
+
   // Declare vector for storing gradient calculations
-  Vector D(augParamCount);
+  Vector g(augParamCount);
 
   // Specify precision of minimization algorithm
   double SIG = 0.1;
   double EXT = 3.0;
   //int MAX = 20;
-  int MAX = 30;
+  //int MAX = 30;
+  int MAX = 10;
   //double INT = 0.01;
   double INT = 0.01;
   //int length = 1000;
   int length = 100;
 
   // Define restart count and hyperparameter bounds
-  int restartCount = 10;
-  double lb = -11.512925464970229;
-  double ub = -11.512925464970229;
+  //int restartCount = 10;
+  int restartCount = 20;
+  //double lb = -11.512925464970229;
+  //double ub = 11.512925464970229;
+  //double lb = std::log(0.00001);
+  //double ub = std::log(10.0);
+  
+  //Vector lbs(augParamCount);
+  //lbs(0) = std::log(0.001);
+  //lbs(1) = std::log(0.01);
+  //lbs(0) = std::log(0.001);
+  //Vector ubs(augParamCount);
+  //ubs(0) = std::log(1.0);
+  //ubs(1) = std::log(1.0);
+  //ubs(0) = std::log(5.0);
+
+  auto lbs = (lowerBounds.array().log()).matrix();
+  auto ubs = (upperBounds.array().log()).matrix();
+
+  //std::cout << "\nHyperparameter Log Bounds:\n";
+  //std::cout << lbs.transpose() << std::endl;
+  //std::cout << ubs.transpose() << std::endl;
+  
   double currentVal;
   double optVal = 1e9;
   Vector theta(augParamCount);
@@ -243,10 +317,12 @@ void GP::GaussianProcess::fitModel()
       
       // Sample initial hyperparameter vector
       //theta = static_cast<Vector>(Eigen::VectorXd::Ones(augParamCount));
-      theta = sampleUnif(lb, ub, augParamCount);
-  
+      //theta = sampleUnif(lb, ub, augParamCount);
+      theta = sampleUnifVector(lbs, ubs);
+      //std::cout << theta.transpose() << std::endl;
+
       // Optimize hyperparameters
-      minimize::cg_minimize(theta, this , D, length, SIG, EXT, INT, MAX);
+      minimize::cg_minimize(theta, this, g, length, SIG, EXT, INT, MAX);
 
       currentVal = evalNLML(theta);
 
@@ -257,33 +333,27 @@ void GP::GaussianProcess::fitModel()
         }
     }
 
+  // ASSUME OPTIMIZATION OVER LOG VALUES
+  for ( auto i : boost::irange(0,augParamCount) )
+    optParams(i) = std::exp(optParams(i));
+  
   // Assign tuned parameters to model
   if (!fixedNoise)
     {
       noiseLevel = static_cast<double>((optParams.head(1))[0]);
-      optParams = optParams.tail(augParamCount - 1);
-      
-      // ASSUME OPTIMIZATION OVER LOG VALUES
-      for ( auto i : boost::irange(0,paramCount) )
-        optParams(i) = std::exp(optParams(i));
-
-      (*kernel).setParams(optParams);
+      optParams = static_cast<Vector>(optParams.tail(augParamCount - 1));
     }
-  else
-    {
-      // ASSUME OPTIMIZATION OVER LOG VALUES
-      for ( auto i : boost::irange(0,paramCount) )
-        optParams(i) = std::exp(optParams(i));
-
-      (*kernel).setParams(optParams);
-    }
+  
+  (*kernel).setParams(optParams);
 
   // Recompute covariance and Cholesky factor
   auto N = static_cast<int>(K.rows());
   Vector params = (*kernel).getParams();
-  (*kernel).computeCov(K, distMatrix, params, 0);
+  auto nullGradList = (*kernel).computeCov(K, distMatrix, params);
   cholesky = ( K + (noiseLevel+jitter)*Matrix::Identity(N,N) ).llt();
-  
+
+  // Fix noise at optimized value
+  //fixedNoise = true;
 };
 
 // Compute predicted values
@@ -295,6 +365,8 @@ void GP::GaussianProcess::predict()
 
   // Get optimized kernel hyperparameters
   Vector params = (*kernel).getParams();
+
+  //std::cout << params << std::endl;
   
   // Compute cross covariance for test points
   Matrix kstar;
@@ -339,8 +411,9 @@ Matrix GP::GaussianProcess::getSamples(int count)
     }
 
   // Compute Cholesky factor L
-  Matrix L = ( predCov + jitter*Matrix::Identity(static_cast<int>(predCov.cols()), static_cast<int>(predCov.cols())) ).llt().matrixL();
-  
+  //Matrix L = ( predCov + jitter*Matrix::Identity(static_cast<int>(predCov.cols()), static_cast<int>(predCov.cols())) ).llt().matrixL();
+  Matrix L = ( predCov + (noiseLevel+jitter)*Matrix::Identity(static_cast<int>(predCov.cols()), static_cast<int>(predCov.cols())) ).llt().matrixL();
+
   // Draw samples using the formula:  y = m + L*u
   Matrix samples = predMean.replicate(1,count) + L*uVals;
   
