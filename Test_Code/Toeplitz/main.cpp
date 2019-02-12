@@ -103,10 +103,10 @@ double targetFunc(double x)
 }
 
 // Define function for uniform sampling
-Matrix sampleUnif(double a=0.0, double b=1.0, int N=1)
-{
-  return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
-}
+//Matrix sampleUnif(double a=0.0, double b=1.0, int N=1)
+//{
+//  return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
+//}
 
 // Example using GP class for regression
 int main(int argc, char const *argv[])
@@ -115,6 +115,7 @@ int main(int argc, char const *argv[])
   using std::endl;
   using GP::GaussianProcess;
   using GP::linspace;
+  using GP::sampleUnif;
   using GP::RBF;
   
   // Aliases for timing functions with chrono

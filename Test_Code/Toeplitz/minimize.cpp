@@ -267,8 +267,10 @@ void minimize::cg_minimize(Vector & X, minimize::GradientObj * target, Vector & 
 
         } // END COMPUTE NEW SEARCH DIRECTION
 
-
     }  // END MAIN LOOP
+  
+  //std::cout << "\nMinimized Function Value (???) :\n";
+  //std::cout << f0 << std::endl;
 
 };
 

@@ -20,10 +20,10 @@ namespace GP {
   using Matrix = Eigen::MatrixXd;
   using Vector = Eigen::VectorXd;
 
-
+  // Define function for sampling uniform distribution on interval
+  Matrix sampleUnif(double a=0.0, double b=1.0, int N=1);
+  
   // Define abstract class for covariance kernels
-
-
   class Kernel 
   {    
   public:

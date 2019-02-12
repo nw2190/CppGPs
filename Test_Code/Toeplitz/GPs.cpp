@@ -324,24 +324,30 @@ void GP::GaussianProcess::evalDNLML(const Vector & p, Vector & g) //, Matrix & a
     }
 }
 
+// Define function for uniform sampling
+Matrix GP::sampleUnif(double a, double b, int N)
+{
+  return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
+}
+
 
 // Fit model hyperparameters
 void GP::GaussianProcess::fitModel()
 {
   // Get combined parameter/noise vector size
   int paramCount = (*kernel).getParamCount();
-  int n = (fixedNoise) ? static_cast<int>(paramCount) : static_cast<int>(paramCount) + 1 ;
+  int augParamCount = (fixedNoise) ? static_cast<int>(paramCount) : static_cast<int>(paramCount) + 1 ;
 
   // Precompute distance matrix
   computeDistMat();
   
   // Specify initial parameter values for solver
-  Vector x = static_cast<Vector>(Eigen::VectorXd::Ones(n));
+  Vector x = static_cast<Vector>(Eigen::VectorXd::Ones(augParamCount));
   if (!fixedNoise)
     x[0] = 0.001;
   
   // Declare vector for storing gradient calculations
-  Vector D(n);
+  Vector D(augParamCount);
 
   // Specify precision of minimization algorithm
   double SIG = 0.1;
@@ -357,15 +363,44 @@ void GP::GaussianProcess::fitModel()
   double INT = 0.01;
   int length = 1000;
 
-  // Optimize hyperparameters
-  //minimize::cg_minimize(x, this , D, length, SIG, EXT, INT);
-  minimize::cg_minimize(x, this , D, length, SIG, EXT, INT, MAX);
+
+  // Define restart count and hyperparameter bounds
+  int restartCount = 10;
+  double lb = -11.512925464970229;
+  double ub = -11.512925464970229;
+  double currentVal;
+  double optVal = 1e9;
+  Vector theta(augParamCount);
+  Vector optParams(augParamCount);
+
+  
+  for ( auto i : boost::irange(0,restartCount) )
+    {
+
+      // Sample initial hyperparameter vector
+      //theta = static_cast<Vector>(Eigen::VectorXd::Ones(augParamCount));
+      theta = sampleUnif(lb, ub, augParamCount);
+  
+      // Optimize hyperparameters
+      //minimize::cg_minimize(x, this , D, length, SIG, EXT, INT);
+      minimize::cg_minimize(theta, this , D, length, SIG, EXT, INT, MAX);
+
+      currentVal = evalNLML(theta);
+
+      if ( currentVal < optVal )
+        {
+          optVal = currentVal;
+          optParams = theta;
+        }
+
+      
+    }
 
   // Assign tuned parameters to model
   if (!fixedNoise)
     {
-      noiseLevel = static_cast<double>((x.head(1))[0]);
-      Vector optParams = x.tail(x.size() - 1);
+      noiseLevel = static_cast<double>((optParams.head(1))[0]);
+      optParams = optParams.tail(augParamCount - 1);
       
       // ASSUME OPTIMIZATION OVER LOG VALUES
       for ( auto i : boost::irange(0,paramCount) )
@@ -375,8 +410,6 @@ void GP::GaussianProcess::fitModel()
     }
   else
     {
-      Vector optParams = x;
-
       // ASSUME OPTIMIZATION OVER LOG VALUES
       for ( auto i : boost::irange(0,paramCount) )
         optParams(i) = std::exp(optParams(i));
