@@ -10,8 +10,7 @@
 #include "minimize.h"
 
 
-// Declare separate namespace for
-// Gaussian process definitions
+// Declare namespace for Gaussian process definitions
 namespace GP {
 
   // Define PI using arctan function
@@ -25,14 +24,13 @@ namespace GP {
   Matrix sampleUnif(double a=0.0, double b=1.0, int N=1);
   Vector sampleUnifVector(Vector lbs, Vector ubs);
   
-  // Define abstract class for covariance kernels
+  // Define abstract base class for covariance kernels
   class Kernel 
   {    
   public:
     // Constructors
     Kernel(Vector p, int c) : kernelParams(p) , paramCount(c) { };
     virtual ~Kernel() = default;
-    //virtual void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv) = 0;
     virtual std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, bool evalGrad=false) = 0;
     virtual void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params) = 0;
     int getParamCount() { return paramCount; } ;
@@ -52,7 +50,6 @@ namespace GP {
   public:
     // Constructors
     RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
-    //void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv);
     std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, bool evalGrad=false);
     void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params);
   private:
@@ -61,26 +58,6 @@ namespace GP {
   };
 
 
-  /*
-  // Define class for radial basis function (RBF) covariance kernel
-  class RBF
-  {
-  public:
-    // Constructors
-    RBF() : kernelParams(Vector(1)) , paramCount(1) { kernelParams(0)=1.0; };
-    void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv);
-    int getParamCount() { return paramCount; } ;
-    Vector getParams() { return kernelParams; };
-    void setParams(Vector params) { kernelParams = params; };
-
-  private:
-    Vector kernelParams;
-    int paramCount;
-
-    double evalKernel(Matrix&, Matrix&, Vector&, int);
-    double evalDistKernel(double, Vector&, int);
-  };
-  */
   
   
   // Define class for Gaussian processes
@@ -102,41 +79,38 @@ namespace GP {
     //{ std::cout << "\nCOPY\n"; N = static_cast<int>(obsX.rows()); }
     */
 
-    // Get and show methods
-    double computeNLML(const Vector & p, double noise);
-    double computeNLML(const Vector & p);
-    double evalNLML(const Vector & p); 
-    double evalNLML(const Vector & p, Vector & g, bool evalGrad=false); 
-    //void evalDNLML(const Vector & p, Vector & g); //, Matrix & alpha);
-    Matrix getPredMean() { return predMean; }
-    Matrix getPredVar() { return predCov.diagonal() + noiseLevel*Eigen::VectorXd::Ones(predMean.size()); }
-    Matrix getSamples(int count=10);
-    decltype(auto) getParams() { return (*kernel).getParams(); }
-    double getNoise() { return noiseLevel; }
-    
     // Set methods
     void setObs(Matrix & x, Matrix & y) { obsX = x; obsY = y; N = static_cast<int>(x.rows()); }
     void setKernel(Kernel & k) { kernel = &k; }
     void setPred(Matrix & px) { predX = px; }
-
-    // NOISE
     void setNoise(double noise) { fixedNoise = true; noiseLevel = noise; }
     void setBounds(Vector & lbs, Vector & ubs) { lowerBounds = lbs; upperBounds = ubs; }
-    //void setNoise(double noise) { fixedNoise = true; noiseLevel = 0.0; }
     
     // Compute methods
-    void predict();
     void fitModel();
+    void predict();
+    double computeNLML(const Vector & p, double noise);
+    double computeNLML(const Vector & p);
+    double computeNLML();
+    
+    // Get methods    
+    Matrix getPredMean() { return predMean; }
+    Matrix getPredVar() { return predCov.diagonal() + noiseLevel*Eigen::VectorXd::Ones(predMean.size()); }
+    Matrix getSamples(int count=10);
+    Vector getParams() { return (*kernel).getParams(); }
+    double getNoise() { return noiseLevel; }
+    
 
     // Define method for superclass "GradientObj" used by minimization algorithm
-    //void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X); evalDNLML(X,D); };
     void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
-
-    void computeDistMat();
 
       
   private:
+    
     // Private member functions
+    double evalNLML(const Vector & p); 
+    double evalNLML(const Vector & p, Vector & g, bool evalGrad=false);
+    void computeDistMat();
     
     // Status variables
     int dimIn;

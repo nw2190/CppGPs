@@ -47,65 +47,42 @@ int main(int argc, char const *argv[])
   using time = high_resolution_clock::time_point;
   
   // Set random seed
-  //std::srand(static_cast<unsigned int>(high_resolution_clock::now().time_since_epoch().count()));
-  std::srand(static_cast<unsigned int>(0));
-  //std::srand(static_cast<unsigned int>(std::time(0)));
+  std::srand(static_cast<unsigned int>(high_resolution_clock::now().time_since_epoch().count()));
+  //std::srand(static_cast<unsigned int>(0));
 
   // Initialize Gaussian process model
   GaussianProcess model;
 
-  // Specify observation data
-  //int obsCount = 500;
+  // Specify observation data count
   int obsCount = 250;
-  //int obsCount = 100;
-  //int obsCount = 20;
-  Matrix x = sampleUnif(0.0, 1.0, obsCount);
-  Matrix y;
-  //auto noiseLevel = 0.05;
-  auto noiseLevel = 0.025;
+
+  // Specify observation noise level
+  auto noiseLevel = 0.05;
   auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
+
+  // Define observations
+  Matrix x = sampleUnif(0.0, 1.0, obsCount);
   //x.resize(obsCount, 1);
   //x = linspace(0.0, 1.0, obsCount);
+  Matrix y;
   y.resize(obsCount, 1);
   y = x.unaryExpr(std::ptr_fun(targetFunc)) + noise;
   model.setObs(x,y);
 
   // Fix noise level
-  //model.setNoise(std::pow(noiseLevel, 2));
-  //model.setNoise(noiseLevel);
-  //model.setNoise(std::sqrt(noiseLevel));
-  //model.setNoise(0.000805);
-  
   //model.setNoise(0.00019);
   
-  //model.setNoise(std::sqrt(0.00019));
-  
-  // Define initial kernel parameters
-  //Vector params(2);
-  //params << 1.0, 1.0;
-  //Vector params(1);
-  //params << 1.0;
-
+  // Specify covariance kernel
   RBF kernel;
-  //model.setKernel(kernel);
   model.setKernel(kernel);
-  //model.setKernel(std::make_unique<GP::Kernel>(kernel));
-  //model.setKernel(std::make_shared<GP::Kernel>(kernel));
 
+  // Define hyperparameter bounds
   Vector lbs(2);
-  //lbs << 0.001 , 1.0;
-  //lbs << 0.0001 , 0.1;
-  //lbs << 0.0001 , 0.01;
   lbs << 0.0001 , 0.01;
   Vector ubs(2);
-  //ubs << 5.0 , 1.0;
   ubs << 5.0 , 5.0;
   model.setBounds(lbs, ubs);
 
-
-  // Define kernel for GP model
-  //model.setKernel( std::make_unique<GP::kernelfn>(kernel) , params );
-  //model.setDistKernel( std::make_unique<GP::distkernelfn>(distKernel) , params );
 
   // Fit kernel hyperparameters to data
   time start = high_resolution_clock::now();
@@ -135,37 +112,15 @@ int main(int argc, char const *argv[])
   Matrix pmean = model.getPredMean();
   Matrix pvar = model.getPredVar();
   Matrix pstd = (pvar.array().sqrt()).matrix();
-  //cout << "\nPredicted Standard Deviations:\n";
-  //for ( auto i : boost::irange(0,10) )
-  //  cout <<  std::sqrt(pvar(i)) << " ";
-  //cout << endl;
 
   // Get sample paths from posterior
   int sampleCount = 100;
   Matrix samples = model.getSamples(sampleCount);
 
   // Compare NLML results
-  Vector params1 = model.getParams();
-  cout << model.computeNLML(params1) << endl;
-  Vector params2(1);
-  params2 << 0.168;
-  cout << model.computeNLML(params2, 0.00019) << endl;
+  cout << "NLML:  " << model.computeNLML() << endl << endl;
 
-  /*
-  // Test STL vector for Eigen matrices
-  std::vector<Matrix> matrixVector;
-  Matrix M1(2,2);
-  M1 << 1, 1, 1, 1;
-  Matrix M2(2,2);
-  M2 << 2, 2, 2, 2;
-
-  matrixVector.push_back(M1);
-  matrixVector.push_back(M2);
-
-  cout << "\nOutput of begin and end: \n"; 
-  for (auto i = matrixVector.begin(); i != matrixVector.end(); ++i) 
-    cout << endl << *i << endl; 
-  */
+  
   
   // Save true and predicted means/variances to file
   std::string outputFile = "predictions.csv";

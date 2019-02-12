@@ -1,18 +1,16 @@
+//#define EIGEN_USE_MKL_ALL
 #ifndef _GPS_H
 #define _GPS_H
 #include <iostream>
 #include <array>
+#include <vector>
 #include <memory>
 #include <cmath>
 #include <Eigen/Dense>
-#include "./include/cppoptlib/meta.h"
-//#include "./include/cppoptlib/problem.h"
-#include "./include/cppoptlib/boundedproblem.h"
-//#include "./include/cppoptlib/solver/bfgssolver.h"
-#include "./include/cppoptlib/solver/lbfgsbsolver.h"
+#include "minimize.h"
 
-// Declare separate namespace for
-// Gaussian process definitions
+
+// Declare namespace for Gaussian process definitions
 namespace GP {
 
   // Define PI using arctan function
@@ -22,104 +20,116 @@ namespace GP {
   using Matrix = Eigen::MatrixXd;
   using Vector = Eigen::VectorXd;
 
-  // Define kernel and kernel_pointer aliases
-  using kernelfn = double (*)(Matrix&, Matrix&, Vector&, int);
-  using kernelptr = std::unique_ptr<kernelfn>;
-  using distkernelfn = double (*)(double, Vector&, int);
-  using distkernelptr = std::unique_ptr<distkernelfn>;
+  // Define function for sampling uniform distribution on interval
+  Matrix sampleUnif(double a=0.0, double b=1.0, int N=1);
+  Vector sampleUnifVector(Vector lbs, Vector ubs);
+  
+  // Define abstract base class for covariance kernels
+  class Kernel 
+  {    
+  public:
+    // Constructors
+    Kernel(Vector p, int c) : kernelParams(p) , paramCount(c) { };
+    virtual ~Kernel() = default;
+    virtual std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, bool evalGrad=false) = 0;
+    virtual void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params) = 0;
+    int getParamCount() { return paramCount; } ;
+    Vector getParams() { return kernelParams; };
+    void setParams(Vector params) { kernelParams = params; };
+  protected:
+    Vector kernelParams;
+    int paramCount;
+    virtual double evalKernel(Matrix&, Matrix&, Vector&, int) = 0;
+    virtual double evalDistKernel(double, Vector&, int) = 0;
+  };
 
 
+  // Define class for radial basis function (RBF) covariance kernel
+  class RBF : public Kernel
+  {
+  public:
+    // Constructors
+    RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
+    std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, bool evalGrad=false);
+    void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params);
+  private:
+    double evalKernel(Matrix&, Matrix&, Vector&, int);
+    double evalDistKernel(double, Vector&, int);
+  };
+
+
+  
+  
   // Define class for Gaussian processes
-  class GaussianProcess
+  class GaussianProcess : public minimize::GradientObj
   {    
   public:
     // Constructors
     GaussianProcess() : dimIn(1) { }
     GaussianProcess(int din) : dimIn(din) { }
     // Copy Constructor
+    /*
     GaussianProcess(const GaussianProcess & m) :
-      useDistKernel(m.useDistKernel) ,
+      kernel( (m.kernel) ?  std::move(m.kernel) : nullptr ) ,
       noiseLevel(m.noiseLevel),
       fixedNoise(m.fixedNoise),
-      kernel( (m.kernel) ?  std::make_unique<kernelfn>(kernelfn(*(m.kernel))) : nullptr ) ,
-      distKernel( (m.distKernel) ? std::make_unique<distkernelfn>(distkernelfn(*(m.distKernel))) : nullptr) ,
-      paramCount(m.paramCount),
       obsX(m.obsX) ,
       obsY(m.obsY)
-      { N = static_cast<int>(obsX.rows()); }
-      //{ std::cout << "\nCOPY\n"; N = static_cast<int>(obsX.rows()); }
+    { N = static_cast<int>(obsX.rows()); }
+    //{ std::cout << "\nCOPY\n"; N = static_cast<int>(obsX.rows()); }
+    */
 
-
-    // Get and show methods
-    int getDim() { return dimIn; }
-    void showObs();
-    void showCov(int prec=5);
-    double evalNLML(const Vector & p, Matrix & alpha);
-    void evalDNLML(const Vector & p, Vector & g, Matrix & alpha);
-    double getNLML() { return NLML; }
-    Matrix getCov() { return K; }
-    Matrix getPredMean() { return predMean; }
-    Matrix getPredVar() { return predCov.diagonal() + noiseLevel*noiseLevel*Eigen::VectorXd::Ones(predMean.size()); }
-    Matrix getSamples(int count=10);
-    decltype(auto) getParams() { return kernelParams; }
-    double getNoise() { return noiseLevel; }
-    
     // Set methods
     void setObs(Matrix & x, Matrix & y) { obsX = x; obsY = y; N = static_cast<int>(x.rows()); }
-    void setKernel(kernelptr k, Vector p) { kernelParams = p; paramCount = p.size(); kernel = std::move(k); }
-    void setDistKernel(distkernelptr k, Vector p) { useDistKernel = true; kernelParams = p; paramCount = p.size(); distKernel = std::move(k); }
+    void setKernel(Kernel & k) { kernel = &k; }
     void setPred(Matrix & px) { predX = px; }
     void setNoise(double noise) { fixedNoise = true; noiseLevel = noise; }
+    void setBounds(Vector & lbs, Vector & ubs) { lowerBounds = lbs; upperBounds = ubs; }
     
     // Compute methods
-    void computeCov(Vector & p);
-    void computeCov();
-    void computeChol(double noise);
-    void computeChol();
-    void predict();
     void fitModel();
+    void predict();
+    double computeNLML(const Vector & p, double noise);
+    double computeNLML(const Vector & p);
+    double computeNLML();
     
-    // Define nested class for specifying minimization problem
-    class fminProblem : public cppoptlib::BoundedProblem<double>  //  : public cppoptlib::Problem<double>
-    {
-    public:
-      using Superclass = cppoptlib::BoundedProblem<double>;
-      //fminProblem(std::unique_ptr<GaussianProcess> m) { model = std::move(m); }
-      //fminProblem(std::unique_ptr<GaussianProcess> m, const Vector & lb, const Vector & ub) : Superclass(lb,ub) {model=std::move(m);}
-      //std::unique_ptr<GaussianProcess> model;
-      fminProblem(GaussianProcess * m, const Vector & lb, const Vector & ub) : Superclass(lb,ub), model(m)  { }
-      double value(const Vector &x) { return (*model).evalNLML(x,_alpha); }
-      void gradient(const Vector &x, Vector &g) { (*model).evalDNLML(x,g,_alpha); }      
-      GaussianProcess * model;
-    private:
-      // Store alpha matrix for reuse in gradient calculation
-      Matrix _alpha;
-    };
+    // Get methods    
+    Matrix getPredMean() { return predMean; }
+    Matrix getPredVar() { return predCov.diagonal() + noiseLevel*Eigen::VectorXd::Ones(predMean.size()); }
+    Matrix getSamples(int count=10);
+    Vector getParams() { return (*kernel).getParams(); }
+    double getNoise() { return noiseLevel; }
+    
 
-    
-    
+    // Define method for superclass "GradientObj" used by minimization algorithm
+    void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
+
+      
   private:
+    
     // Private member functions
-    double evalKernel(Matrix&& x1, Matrix&& x2, int deriv=0) { return (*kernel)(x1, x2, kernelParams, deriv); }
-    void computeCrossCov(Matrix & M, Matrix & v1, Matrix & v2, Vector & p, int deriv);
-    void computeCrossCov(Matrix & M, Matrix & v1, Matrix & v2, Vector & p);
-    void computeCrossCov(Matrix & M, Matrix & v1, Matrix & v2);
-
+    double evalNLML(const Vector & p); 
+    double evalNLML(const Vector & p, Vector & g, bool evalGrad=false);
+    void computeDistMat();
+    
     // Status variables
-    bool useDistKernel = false;
     int dimIn;
     int N = 0;
 
     // Kernel and covariance matrix
-    double noiseLevel = 0.00001;
+    Kernel * kernel;
+    double noiseLevel = 0.0;
     bool fixedNoise = false;
-    double jitter = 0.000001;
-    kernelptr kernel;    
-    distkernelptr distKernel;
-    Vector kernelParams;
-    int paramCount;
+    double jitter = 1e-7;
     Matrix K;
     Eigen::LLT<Matrix> cholesky;
+
+    Vector lowerBounds;
+    Vector upperBounds;
+
+    // Store squared distance matrix and alpha for NLML/DNLML calculations
+    Matrix distMatrix;
+    Matrix _alpha;
     
     // Observation data
     Matrix obsX; // size: N x dimIn
@@ -131,6 +141,7 @@ namespace GP {
     Matrix predCov;
     double NLML = 0.0;
 
+    
   };
 
   // Define linspace function for generating

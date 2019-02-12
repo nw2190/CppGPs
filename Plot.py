@@ -34,7 +34,7 @@ def main():
     inVals = []
     trueVals = []
     predMean = []
-    predVar = []
+    predStd = []
     with open(filename, "r") as csvfile:
         csvreader = csv.reader(csvfile, delimiter=',', quotechar='|')
         for row in csvreader:
@@ -42,11 +42,11 @@ def main():
             inVals.append(i)
             trueVals.append(t)
             predMean.append(m)
-            predVar.append(v)
+            predStd.append(v)
     inVals = np.array(inVals).astype(np.float32)
     trueVals = np.array(trueVals).astype(np.float32)
     predMean = np.array(predMean).astype(np.float32)
-    predVar = np.array(predVar).astype(np.float32)
+    predStd = np.array(predStd).astype(np.float32)
 
     ## Get observation data
     filename = "observations.csv"
@@ -82,6 +82,8 @@ def main():
     n_restarts = 10
     normalize_y = False
     use_white_noise = True
+    #use_white_noise = False  ### Completely overfit...
+    #use_white_noise = False
     if use_white_noise:
         kernel = RBF(length_scale=1.0, length_scale_bounds=(0.001,500.0)) + WhiteKernel(noise_level=1, noise_level_bounds=(1e-10, 1e+1))
     else:
@@ -102,6 +104,18 @@ def main():
     print(" ")
     mean, std = model.predict(Xtest, return_std=True)
     model_samples = model.sample_y(Xtest, samples.shape[0])
+
+    #print("\nSample Path Count:")
+    #print(samples.shape[0])
+
+    #print("\nCpp Standard Deviations:")
+    #print(predStd[:10])
+    
+    #print("\nSciKit Standard Deviations:")
+    #print(std[:10])
+
+    NLML = -model.log_marginal_likelihood()
+    print("NLML:   {:.4f}\n".format(NLML))
 
     
     # Plot Scikit Learn results
@@ -127,7 +141,7 @@ def main():
 
     alpha = 0.1
     for k in [1,2,3]:
-        plt.fill_between(inVals, predMean - k*predVar, predMean + k*predVar, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
+        plt.fill_between(inVals, predMean - k*predStd, predMean + k*predStd, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
 
     plt.plot(inVals, trueVals, 'C1', linewidth=2.0, linestyle="dashed")
 

@@ -105,18 +105,17 @@ def main():
     mean, std = model.predict(Xtest, return_std=True)
     model_samples = model.sample_y(Xtest, samples.shape[0])
 
-    print("\nSample Path Count:")
-    print(samples.shape[0])
+    #print("\nSample Path Count:")
+    #print(samples.shape[0])
 
-    print("\nCpp Standard Deviations:")
-    print(predStd[:10])
+    #print("\nCpp Standard Deviations:")
+    #print(predStd[:10])
     
-    print("\nSciKit Standard Deviations:")
-    print(std[:10])
-    
-    print("\nNLML:")
+    #print("\nSciKit Standard Deviations:")
+    #print(std[:10])
+
     NLML = -model.log_marginal_likelihood()
-    print(NLML)
+    print("NLML:   {:.4f}\n".format(NLML))
 
     
     # Plot Scikit Learn results

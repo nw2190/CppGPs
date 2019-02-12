@@ -1,14 +1,17 @@
 // main.cpp -- test GP class definitions
+//#define EIGEN_USE_MKL_ALL
 #include <iostream>
 #include <cmath>
 #include <string>
 #include <array>
+#include <vector>
 #include <memory>
 #include <random>
 #include <chrono>
 #include <fstream>
 #include <boost/range/irange.hpp>
 #include "GPs.h"
+
 
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
@@ -22,66 +25,11 @@ float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono:
 {
   return static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count() / 1000000.0);
 };
-/*
-// Define squared exponential kernel between two points
-double kernel(Matrix & x, Matrix & y, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return params(0) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(1),2)));
-    case 1: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(1),2)));
-    case 2: return params(0) * (x-y).squaredNorm() / std::pow(params(1),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(1),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-}
-
-// Define squared exponential kernel provided a squared distance as input
-//double distKernel(double d, Vector & params)
-//{ return params(0) * std::exp( -d / (2.0*std::pow(params(1),2))); }
-double distKernel(double d, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return params(0) * std::exp( -d / (2.0*std::pow(params(1),2)));
-    case 1: return std::exp( -d / (2.0*std::pow(params(1),2)));
-    case 2: return params(0) * d / std::pow(params(1),3) * std::exp( -d / (2.0*std::pow(params(1),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-}
-*/
-
-// Define squared exponential kernel between two points
-double kernel(Matrix & x, Matrix & y, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
-    case 1: return (x-y).squaredNorm() / std::pow(params(0),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-}
-
-// Define squared exponential kernel provided a squared distance as input
-double distKernel(double d, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
-    case 1: return d / std::pow(params(0),3) * std::exp( -d / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-}
 
 // Specify the true target function
 double targetFunc(double x)
 {
   return std::sin(3.0*(x-0.1))*(0.5-(x-0.1))*15.0;
-}
-
-// Define function for uniform sampling
-Matrix sampleUnif(double a=0.0, double b=1.0, int N=1)
-{
-  return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
 }
 
 // Example using GP class for regression
@@ -91,46 +39,50 @@ int main(int argc, char const *argv[])
   using std::endl;
   using GP::GaussianProcess;
   using GP::linspace;
-
+  using GP::sampleUnif;
+  using GP::RBF;
+  
   // Aliases for timing functions with chrono
   using std::chrono::high_resolution_clock;
   using time = high_resolution_clock::time_point;
   
   // Set random seed
   std::srand(static_cast<unsigned int>(high_resolution_clock::now().time_since_epoch().count()));
-  //std::srand(static_cast<unsigned int>(std::time(0)));
+  //std::srand(static_cast<unsigned int>(0));
 
   // Initialize Gaussian process model
-  GaussianProcess model(1);
+  GaussianProcess model;
 
-  // Specify observation data
-  //int obsCount = 250;
-  int obsCount = 20;
-  Matrix x = sampleUnif(0.0, 1.0, obsCount);
-  Matrix y;
+  // Specify observation data count
+  int obsCount = 250;
+
+  // Specify observation noise level
   auto noiseLevel = 0.05;
   auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
+
+  // Define observations
+  Matrix x = sampleUnif(0.0, 1.0, obsCount);
   //x.resize(obsCount, 1);
   //x = linspace(0.0, 1.0, obsCount);
+  Matrix y;
   y.resize(obsCount, 1);
   y = x.unaryExpr(std::ptr_fun(targetFunc)) + noise;
   model.setObs(x,y);
 
   // Fix noise level
-  model.setNoise(std::pow(noiseLevel, 2));
-  //model.setNoise(noiseLevel);
-  //model.setNoise(std::sqrt(noiseLevel));
+  //model.setNoise(0.00019);
   
-  // Define initial kernel parameters
-  //Vector params(2);
-  //params << 1.0, 1.0;
-  Vector params(1);
-  params << 1.0;
+  // Specify covariance kernel
+  RBF kernel;
+  model.setKernel(kernel);
 
+  // Define hyperparameter bounds
+  Vector lbs(2);
+  lbs << 0.0001 , 0.01;
+  Vector ubs(2);
+  ubs << 5.0 , 5.0;
+  model.setBounds(lbs, ubs);
 
-  // Define kernel for GP model
-  model.setKernel( std::make_unique<GP::kernelfn>(kernel) , params );
-  model.setDistKernel( std::make_unique<GP::distkernelfn>(distKernel) , params );
 
   // Fit kernel hyperparameters to data
   time start = high_resolution_clock::now();
@@ -142,13 +94,14 @@ int main(int argc, char const *argv[])
   cout << "\nComputation Time: ";
   cout << computationTime << " s" << endl;
 
-
   // Get tuned hyperparameters
   auto optParams = model.getParams();
   cout << "\nOptimized Hyperparameters:" << endl << optParams.transpose() << "  ";
   auto noiseL = model.getNoise();
   cout << "(Noise = " << noiseL << ")\n" << endl;
-  
+
+
+
   // Define test mesh for predictions
   int predCount = 100;
   auto testMesh = linspace(0.0, 1.0, predCount);
@@ -158,11 +111,16 @@ int main(int argc, char const *argv[])
   model.predict();
   Matrix pmean = model.getPredMean();
   Matrix pvar = model.getPredVar();
+  Matrix pstd = (pvar.array().sqrt()).matrix();
 
   // Get sample paths from posterior
   int sampleCount = 100;
   Matrix samples = model.getSamples(sampleCount);
 
+  // Compare NLML results
+  cout << "NLML:  " << model.computeNLML() << endl << endl;
+
+  
   
   // Save true and predicted means/variances to file
   std::string outputFile = "predictions.csv";
@@ -171,7 +129,7 @@ int main(int argc, char const *argv[])
   fout.open(outputFile);
   for ( auto i : boost::irange(0,predCount) )
     {
-      fout << testMesh(i) << "," << trueSoln(i) << "," << pmean(i) << "," << pvar(i) << "\n";
+      fout << testMesh(i) << "," << trueSoln(i) << "," << pmean(i) << "," << pstd(i) << "\n";
     }
   fout.close();
 
@@ -196,5 +154,6 @@ int main(int argc, char const *argv[])
     }
   fout.close();
 
+  
   return 0;
 }
