@@ -84,7 +84,7 @@ namespace GP {
     void setKernel(Kernel & k) { kernel = &k; }
     void setPred(Matrix & px) { predX = px; }
     void setNoise(double noise) { fixedNoise = true; noiseLevel = noise; }
-    void setBounds(Vector & lbs, Vector & ubs) { lowerBounds = lbs; upperBounds = ubs; }
+    void setBounds(Vector & lbs, Vector & ubs) { lowerBounds = lbs; upperBounds = ubs; fixedBounds=true; }
     
     // Compute methods
     void fitModel();
@@ -126,7 +126,9 @@ namespace GP {
 
     Vector lowerBounds;
     Vector upperBounds;
-
+    bool fixedBounds = false;
+    void parseBounds(Vector & lbs, Vector & ubs, int augParamCount);
+      
     // Store squared distance matrix and alpha for NLML/DNLML calculations
     Matrix distMatrix;
     Matrix _alpha;

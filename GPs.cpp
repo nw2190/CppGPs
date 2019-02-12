@@ -246,6 +246,49 @@ Vector GP::sampleUnifVector(Vector lbs, Vector ubs)
 }
 
 
+// Define utility function for formatting hyperparameter bounds
+void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCount)
+{
+  lbs.resize(augParamCount);
+  ubs.resize(augParamCount);
+
+  double defaultLowerBound = 0.001;
+  double defaultUpperBound = 5.0;
+  
+  if ( fixedBounds )
+    {
+      // Check if bounds for noise parameter were provided
+      auto bsize = static_cast<int>(lowerBounds.rows());
+      if ( bsize < augParamCount )
+        {
+          // Set noise bounds to defaults
+          lbs(0) = std::log( defaultLowerBound );
+          ubs(0) = std::log( defaultUpperBound );
+
+          // Convert specified bounds to log-scale
+          for ( auto bi : boost::irange(1,augParamCount) )
+            {
+              lbs(bi) = std::log(lowerBounds(bi-1));
+              ubs(bi) = std::log(upperBounds(bi-1));
+            }
+        }
+      else
+        {
+          // Convert specified bounds to log-scale
+          lbs = (lowerBounds.array().log()).matrix();
+          ubs = (upperBounds.array().log()).matrix();
+        }
+    }
+  else
+    {
+      // Set noise and hyperparameter bounds to defaults
+      lbs = ( defaultLowerBound * Eigen::MatrixXd::Ones(augParamCount,1) ).array().log().matrix();
+      ubs = ( defaultUpperBound * Eigen::MatrixXd::Ones(augParamCount,1) ).array().log().matrix();
+    }
+
+}
+
+
 // Fit model hyperparameters
 void GP::GaussianProcess::fitModel()
 {
@@ -270,9 +313,10 @@ void GP::GaussianProcess::fitModel()
   int restartCount = 20;
 
   // Convert hyperparameter bounds to log-scale
-  auto lbs = (lowerBounds.array().log()).matrix();
-  auto ubs = (upperBounds.array().log()).matrix();
+  Vector lbs, ubs;
+  parseBounds(lbs, ubs, augParamCount);
 
+  // Declare variables to store optimization loop results
   double currentVal;
   double optVal = 1e9;
   Vector theta(augParamCount);
@@ -290,8 +334,8 @@ void GP::GaussianProcess::fitModel()
       // Optimize hyperparameters
       minimize::cg_minimize(theta, this, g, length, SIG, EXT, INT, MAX);
 
+      // Compute current NLML and store parameters if optimal
       currentVal = evalNLML(theta);
-
       if ( currentVal < optVal )
         {
           optVal = currentVal;

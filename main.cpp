@@ -57,7 +57,8 @@ int main(int argc, char const *argv[])
   int obsCount = 250;
 
   // Specify observation noise level
-  auto noiseLevel = 0.05;
+  //auto noiseLevel = 0.05;
+  auto noiseLevel = 0.15;
   auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
 
   // Define observations
@@ -77,12 +78,20 @@ int main(int argc, char const *argv[])
   model.setKernel(kernel);
 
   // Define hyperparameter bounds
+  /*
   Vector lbs(2);
   lbs << 0.0001 , 0.01;
   Vector ubs(2);
   ubs << 5.0 , 5.0;
   model.setBounds(lbs, ubs);
-
+  */
+  
+  Vector lbs(1);
+  lbs <<  0.01;
+  Vector ubs(1);
+  ubs <<  5.0;
+  model.setBounds(lbs, ubs);
+  
 
   // Fit kernel hyperparameters to data
   time start = high_resolution_clock::now();
