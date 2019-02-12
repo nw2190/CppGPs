@@ -29,9 +29,7 @@ double GP::RBF::evalKernel(Matrix & x, Matrix & y, Vector & params, int n)
 // Define distance kernel function for RBF
 //
 // REVISION:  Optimize w.r.t. theta = log(l) for stability.
-//
-// ==> .../ l^2  instead of .../ l^3
-//
+//                 ==> .../ l^2  instead of .../ l^3
 double GP::RBF::evalDistKernel(double d, Vector & params, int n)
 {
   switch (n)
@@ -50,8 +48,6 @@ void GP::RBF::computeCov(Matrix & K, Matrix & D, Vector & params, int deriv)
   // Get matrix input observation count
   auto n = static_cast<int>(D.rows());
 
-  //std::cout << Eigen::nbThreads() << std::endl;
-
   // Define lambda function to create unary operator (by clamping kernelParams argument)      
   auto lambda = [=,&params](double d)->double { return evalDistKernel(d, params, deriv); };
 
@@ -59,7 +55,10 @@ void GP::RBF::computeCov(Matrix & K, Matrix & D, Vector & params, int deriv)
     {
       K.col(j) = (D.col(j)).unaryExpr(lambda);          
     }
+
+  // Direct evaluation on individual coefficients
   //K = distMatrix.unaryExpr(lambda);
+  
 };
 
 
@@ -70,16 +69,13 @@ void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & par
   //auto n = static_cast<int>(X1.rows());
   auto m = static_cast<int>(X2.rows());
 
-  // Evaluate using vectorized implementation of distance kernel,
-  // or apply standard binary kernel function component-wise
-
-  // Define lambda function to create unary operator (by clamping kernelParams argument)      
+   // Define lambda function to create unary operator (by clamping kernelParams argument)      
   auto lambda = [=,&params](double d)->double { return evalDistKernel(d, params, 0); };
-
   for ( auto j : boost::irange(0,m) )
     {
       K.col(j) = ((X1.rowwise() - X2.row(j)).rowwise().squaredNorm()).unaryExpr(lambda);          
     }
+  
 };
 
 
@@ -93,129 +89,12 @@ void GP::GaussianProcess::computeDistMat()
     {
       distMatrix.col(j) = (obsX.rowwise() - obsX.row(j)).rowwise().squaredNorm();
     }
-  //distMatrix.resize(n);  
-  //distMatrix = (obsX.rowwise() - obsX.row(0)).rowwise().squaredNorm();
-  
 }
 
-
-/*
-// Compute cross covariance between two input vectors using kernel parameters p
-// (note: values of deriv > 0 correspond to derivative calculations)
-void GP::GaussianProcess::computeCrossCov(Matrix & M, Matrix & v1, Matrix & v2, Vector & p, int deriv, bool useDistMat=false)
-{
-  // Get matrix input observation count
-  auto n = static_cast<int>(v1.rows());
-  auto m = static_cast<int>(v2.rows());
-
-  // Evaluate using vectorized implementation of distance kernel,
-  // or apply standard binary kernel function component-wise
-  if (useDistKernel)
-    {
-
-      if (useDistMat)
-        {
-          //std::cout << "\nUSING DISTANCE MATRIX\n";
-          // Define lambda function to create unary operator (by clamping kernelParams argument)      
-          auto lambda = [=,&p](double d)->double { return (*distKernel)(d, p, deriv); };
-          //int j;
-          //#pragma omp parallel for
-          for ( int j=0 ; j < m; j++ )
-            {
-              M.col(j) = (distMatrix.col(j)).unaryExpr(lambda);          
-            }
-          //M = distMatrix.unaryExpr(lambda);
-        }      
-      else
-        {
-          // Define lambda function to create unary operator (by clamping kernelParams argument)      
-          auto lambda = [=,&p](double d)->double { return (*distKernel)(d, p, deriv); };
-          int j;
-          #pragma omp parallel for
-          for ( j=0 ; j < m; j++ )
-            {
-              M.col(j) = ((v1.rowwise() - v2.row(j)).rowwise().squaredNorm()).unaryExpr(lambda);          
-            }
-        }
-
-    }
-  else
-    {
-      // Define lambda function to create unary operator (by clamping kernelParams argument)
-      auto lambda = [=,&p](Matrix && x1, Matrix && x2)->double { return (*kernel)(x1, x2, p, deriv); };
-      for (auto i : boost::irange(0,n) )
-        {
-          for (auto j : boost::irange(0,m) )
-            {
-              M(i,j) = lambda(v1.row(i), v2.row(j));
-            }
-        }
-    }
-}
-
-
-// Compute cross covariance between two input vectors using kernel parameters p
-void GP::GaussianProcess::computeCrossCov(Matrix & M, Matrix & v1, Matrix & v2, Vector & p, bool useDistMat=false)
-{
-  computeCrossCov(M, v1, v2, p, 0, useDistMat);
-}
-
-// Compute cross covariance between two input vectors using default kernel parameters
-void GP::GaussianProcess::computeCrossCov(Matrix & M, Matrix & v1, Matrix & v2, bool useDistMat=false)
-{
-  computeCrossCov(M, v1, v2, kernelParams, useDistMat);
-}
-
-
-// Compute covariance matrix K with kernel parameters p
-void GP::GaussianProcess::computeCov(Vector & p, bool useDistMat=false)
-{
-  // Check if observations have been defined
-  if ( N == 0 ) { std::cout << "[*] No observations (use 'setObs' to define observations).\n"; return; }
-
-  // Get matrix input observation count
-  auto n = static_cast<int>(obsX.rows());
-  K.resize(n,n);
-
-  // Compute cross covariance in place
-  computeCrossCov(K, obsX, obsX, p, useDistMat);
-}
-
-// Compute covariance matrix K using default kernel paramaters
-void GP::GaussianProcess::computeCov(bool useDistMat=false)
-{
-  computeCov(kernelParams, useDistMat);
-}
-
-
-// Compute Cholesky factorization of covariance matrix K with noise
-void GP::GaussianProcess::computeChol(double noise)
-{  
-  cholesky = ( K + (noise+jitter)*Matrix::Identity(static_cast<int>(K.cols()), static_cast<int>(K.cols())) ).llt();
-}
-
-
-void GP::GaussianProcess::computeCholDirect(double noise, Vector & p)
-{
-  auto lambda = [=,&p](double d)->double { return (*distKernel)(d, p, 0); };
-  auto n = static_cast<int>(obsX.rows());
-  cholesky = ( distMatrix.unaryExpr(lambda) + (noise+jitter)*Matrix::Identity(n,n) ).llt();
-}
-void GP::GaussianProcess::computeCholDirect(Vector & p)
-{
-  computeCholDirect(noiseLevel, p);
-}
-
-// Compute Cholesky factorization of covariance matrix K using default noise
-void GP::GaussianProcess::computeChol()
-{
-  computeChol(noiseLevel);
-}
-*/
 
 // Evaluate NLML for specified kernel hyperparameters p
 // (note: alpha is used to share calculations with DNLML function)
-double GP::GaussianProcess::evalNLML(const Vector & p) //, Matrix & alpha)
+double GP::GaussianProcess::evalNLML(const Vector & p)
 {
   // Get matrix input observation count
   // Possibly not needed for NLML calculation ... ?
@@ -233,10 +112,7 @@ double GP::GaussianProcess::evalNLML(const Vector & p) //, Matrix & alpha)
       for ( auto i : boost::irange(0,paramCount) )
         params(i) = std::exp(params(i));
 
-      //computeCov(params, true);
-      //computeCov(params);
-      //computeChol(noise);
-      //computeCholDirect(noise,params);
+      // Compute covariance matrix and store Cholesky factor
       K.resize(n,n);
       (*kernel).computeCov(K, distMatrix, params, 0);
       cholesky = ( K + (noise+jitter)*Matrix::Identity(n,n) ).llt();
@@ -249,31 +125,25 @@ double GP::GaussianProcess::evalNLML(const Vector & p) //, Matrix & alpha)
       for ( auto i : boost::irange(0,paramCount) )
         params(i) = std::exp(params(i));
 
-      //computeCov(params, true);
-      //computeCov(params);
-      //computeChol();
+      // Compute covariance matrix and store Cholesky factor
       K.resize(n,n);
       (*kernel).computeCov(K, distMatrix, params, 0);
       cholesky = ( K + (noiseLevel+jitter)*Matrix::Identity(n,n) ).llt();
     }
 
-  //Matrix cholMat(cholesky.matrixL());
-  //Matrix alpha = cholesky.solve(obsY);
+  // Store alpha for DNLML calculation
   _alpha = cholesky.solve(obsY);
 
-  //auto NLML_value = -(-0.5 * (obsY.transpose()*alpha)(0)  -  cholMat.array().log().matrix().trace() - 0.5*n*std::log(2*PI));
-  //auto NLML_value = -(-0.5 * (obsY.transpose()*_alpha)(0)  -  cholMat.array().log().matrix().trace() - 0.5*n*std::log(2*PI));
-  //auto NLML_value = -(-0.5 * (obsY.transpose()*_alpha)(0)  -  cholMat.diagonal().array().log().sum() - 0.5*n*std::log(2*PI));
-  //auto NLML_value = 0.5*(obsY.transpose()*_alpha)(0)  +  0.5*cholMat.diagonal().array().log().sum() + 0.5*std::log(2*PI);
+  // Compute NLML value
   auto NLML_value = 0.5*(obsY.transpose()*_alpha)(0)  +  0.5*static_cast<Matrix>(cholesky.matrixL()).diagonal().array().log().sum() + 0.5*std::log(2*PI);
-  //std::cout << NLML_value << std::endl;
+
   return NLML_value;
 }
 
 
 // Evaluate derivatives of NLML for specified kernel hyperparameters
 // (note: alpha is used to retrieve calculations from NLML function)
-void GP::GaussianProcess::evalDNLML(const Vector & p, Vector & g) //, Matrix & alpha)
+void GP::GaussianProcess::evalDNLML(const Vector & p, Vector & g)
 {
   // Get matrix input observation count
   auto n = static_cast<int>(obsX.rows());
@@ -296,8 +166,6 @@ void GP::GaussianProcess::evalDNLML(const Vector & p, Vector & g) //, Matrix & a
   int shift = 0;
   if (!fixedNoise)
     g[0] = -0.5 * ( _alpha*_alpha.transpose() - cholesky.solve(Matrix::Identity(n,n)) ).trace() ;
-    //g[0] = -0.5 * ( alpha*alpha.transpose() - cholesky.solve(Matrix::Identity(n,n)) ).trace() ;
-    //g[0] = -0.5 * ( alpha*alpha.transpose()*noiseLevel - cholesky.solve(noiseLevel*Matrix::Identity(n,n)) ).trace() ;
   else
     shift = 1;
 
@@ -306,14 +174,13 @@ void GP::GaussianProcess::evalDNLML(const Vector & p, Vector & g) //, Matrix & a
   double trace;
   for (auto i : boost::irange(1,paramCount+1))
     {
-      //computeCrossCov(dK_i, obsX, obsX, params, i);
-      //g[i-shift] = -0.5 * ( alpha*alpha.transpose()*dK_i - cholesky.solve(dK_i) ).trace() ;
-      // g[i-shift] = -0.5 * ( _alpha*_alpha.transpose()*dK_i - cholesky.solve(dK_i) ).trace() ;
-      //g[i-shift] = 0.5 * ((cholesky.solve(Matrix::Identity(n,n)) - _alpha*_alpha.transpose())*dK_i ).trace() ;
-      
-      //computeCrossCov(dK_i, obsX, obsX, params, i, true);
+      // Compute derivative of covariance matrix
       (*kernel).computeCov(dK_i, distMatrix, params, i);
+
+      // Compute trace of full matrix
       //g[i-shift] = 0.5 * (term * dK_i ).trace() ;
+
+      // Try computing only diagonal entries for trace calculation
       trace = 0.0;
       for (auto j : boost::irange(0,n))
         {
@@ -352,17 +219,9 @@ void GP::GaussianProcess::fitModel()
   // Specify precision of minimization algorithm
   double SIG = 0.1;
   double EXT = 3.0;
-  //double INT = 0.01;
-  //int MAX = 20;
-  //int length = 1000;
-  //double INT = 0.1;
-  //int MAX = 10;
-  //int MAX = 40;
-  //int MAX = 20;
   int MAX = 20;
   double INT = 0.01;
   int length = 1000;
-
 
   // Define restart count and hyperparameter bounds
   int restartCount = 10;
@@ -373,16 +232,17 @@ void GP::GaussianProcess::fitModel()
   Vector theta(augParamCount);
   Vector optParams(augParamCount);
 
-  
+  // Evaluate optimizer with various different initializations
   for ( auto i : boost::irange(0,restartCount) )
     {
-
+      // Avoid compiler warning for unused variable
+      (void)i;
+      
       // Sample initial hyperparameter vector
       //theta = static_cast<Vector>(Eigen::VectorXd::Ones(augParamCount));
       theta = sampleUnif(lb, ub, augParamCount);
   
       // Optimize hyperparameters
-      //minimize::cg_minimize(x, this , D, length, SIG, EXT, INT);
       minimize::cg_minimize(theta, this , D, length, SIG, EXT, INT, MAX);
 
       currentVal = evalNLML(theta);
@@ -392,8 +252,6 @@ void GP::GaussianProcess::fitModel()
           optVal = currentVal;
           optParams = theta;
         }
-
-      
     }
 
   // Assign tuned parameters to model
@@ -417,11 +275,7 @@ void GP::GaussianProcess::fitModel()
       (*kernel).setParams(optParams);
     }
 
-
   // Recompute covariance and Cholesky factor
-  //computeCov();
-  //computeChol();
-
   auto N = static_cast<int>(K.rows());
   Vector params = (*kernel).getParams();
   (*kernel).computeCov(K, distMatrix, params, 0);
@@ -439,32 +293,26 @@ void GP::GaussianProcess::predict()
   // Get optimized kernel hyperparameters
   Vector params = (*kernel).getParams();
   
-  // Store cross covariance for test points in kstar
+  // Compute cross covariance for test points
   Matrix kstar;
   kstar.resize(n,m);
   (*kernel).computeCrossCov(kstar, obsX, predX, params);
 
+  // Compute covariance matrix for test points
   Matrix kstarmat;
   kstarmat.resize(m,m);
   (*kernel).computeCrossCov(kstarmat, predX, predX, params);
 
-
-  
+  // Possible redundant calculations; should simplify...
   Matrix cholMat(cholesky.matrixL());
   Matrix alpha = cholesky.solve(obsY);
   Matrix v = kstar;
   cholMat.triangularView<Eigen::Lower>().solveInPlace(v);
 
-  // Verify that  L*v = kstar  and  (K+noise)*alpha = obsY
-  //std::cout << (cholMat.triangularView<Eigen::Lower>() * v - kstar).squaredNorm() << std::endl;
-  //auto noiseK = K + (noiseLevel+jitter)*Matrix::Identity(static_cast<int>(K.cols()), static_cast<int>(K.cols()));
-  //std::cout << (noiseK * alpha - obsY).squaredNorm() << std::endl;
-  
   // Set predictive means/variances and compute negative log marginal likelihood
   predMean = kstar.transpose() * alpha;
   predCov = kstarmat - v.transpose() * v;
-  //NLML = -0.5 * (obsY.transpose()*alpha)(0)  -  cholMat.array().log().matrix().trace() - 0.5*n*std::log(2*PI);
-  
+
 }
 
 
