@@ -42,18 +42,63 @@ double GP::RBF::evalDistKernel(double d, Vector & params, int n)
 };
 
 
-// Compute cross covariance between two input vectors using kernel parameters p
-std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & D, Vector & params, bool evalGrad)
+// Compute pairwise distance between lists of points
+void GP::pdist(Matrix & Dv, Matrix & X1, Matrix & X2)
 {
+  auto n = static_cast<int>(X1.rows());
+  int k = 0;
+  auto entryCount = static_cast<int>( (n*(n-1))/2);
+  Dv.resize(entryCount, 1);
+  for ( auto i : boost::irange(0,n-1) )
+    {      
+      for ( auto j : boost::irange(i+1,n) )
+          Dv(k++) = (static_cast<Vector>(X1.row(i) - X2.row(j))).squaredNorm();
+    }
+}
+
+// Re-assemble pairwise distances into a dense matrix
+void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
+{
+  int k = 0;
+  D.resize(n,n);
+  for ( auto i : boost::irange(0,n-1) )
+    {
+      for ( auto j : boost::irange(i+1,n) )
+          D(i,j) = D(j,i) = Dv(k++,0);
+    }
+
+  D.diagonal() = diagVal * Eigen::MatrixXd::Ones(n,1);
+}
+
+// Compute cross covariance between two input vectors using kernel parameters p
+std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, bool evalGrad)
+{
+  auto n = static_cast<int>(K.rows());
+  
   // Define lambda function to create unary operator (by clamping kernelParams argument)      
   auto lambda = [=,&params](double d)->double { return evalDistKernel(d, params, 0); };
-  K.noalias() = D.unaryExpr(lambda);
+
+  double diagVal = 1.0;
+  Matrix Kv = Dv.unaryExpr(lambda);
+  squareForm(K, Kv, n, diagVal);
+
+
+  // Original formulation:
+  //Matrix D;
+  //squareForm(D, Dv, n);
+  //K.noalias() = D.unaryExpr(lambda);
 
   // Compute gradient list if "evalGrad=true"
   std::vector<Matrix> gradList;
   if ( evalGrad )
     {
-      Matrix dK_i = ( D.array() * (1/std::pow(params(0),2)) * K.array() ).matrix();
+      Matrix dK_i(n,n);
+      Matrix dK_iv = ( Dv.array() * (1/std::pow(params(0),2)) * Kv.array() ).matrix();
+      squareForm(dK_i, dK_iv, n); // Note: diagVal = 0.0
+
+      // Original formulation:
+      //Matrix dK_i = ( D.array() * (1/std::pow(params(0),2)) * K.array() ).matrix();
+      
       gradList.push_back(dK_i);
     }
 
@@ -83,12 +128,16 @@ void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & par
 void GP::GaussianProcess::computeDistMat()
 {
   // Get matrix input observation count
-  auto n = static_cast<int>(obsX.rows());
+  //auto n = static_cast<int>(obsX.rows());
+  /*
   distMatrix.resize(n,n);  
   for ( int j=0 ; j < n; j++ )
     {
       distMatrix.col(j) = (obsX.rowwise() - obsX.row(j)).rowwise().squaredNorm();
     }
+  */
+  pdist(distMatrix, obsX, obsX);
+  
 }
 
 // Evaluate NLML [public interface]
@@ -310,7 +359,7 @@ void GP::GaussianProcess::fitModel()
   double EXT = 3.0;
 
   // Define restart count for optimizer
-  int restartCount = 20;
+  int restartCount = 10;
 
   // Convert hyperparameter bounds to log-scale
   Vector lbs, ubs;

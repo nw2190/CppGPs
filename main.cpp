@@ -55,6 +55,7 @@ int main(int argc, char const *argv[])
 
   // Specify observation data count
   int obsCount = 250;
+  //int obsCount = 10;
 
   // Specify observation noise level
   //auto noiseLevel = 0.05;
@@ -129,7 +130,7 @@ int main(int argc, char const *argv[])
   // Compare NLML results
   cout << "NLML:  " << model.computeNLML() << endl << endl;
 
-  
+
   
   // Save true and predicted means/variances to file
   std::string outputFile = "predictions.csv";

@@ -23,6 +23,10 @@ namespace GP {
   // Define function for sampling uniform distribution on interval
   Matrix sampleUnif(double a=0.0, double b=1.0, int N=1);
   Vector sampleUnifVector(Vector lbs, Vector ubs);
+
+  // Define utility functions for computing distance matrices
+  void pdist(Matrix & Dv, Matrix & X1, Matrix & X2);
+  void squareForm(Matrix & D, Matrix & Dv, int n, double diagVal=0.0);
   
   // Define abstract base class for covariance kernels
   class Kernel 
@@ -130,7 +134,8 @@ namespace GP {
     void parseBounds(Vector & lbs, Vector & ubs, int augParamCount);
       
     // Store squared distance matrix and alpha for NLML/DNLML calculations
-    Matrix distMatrix;
+    //Matrix distMatrix;
+    Matrix distMatrix;    
     Matrix _alpha;
     
     // Observation data
