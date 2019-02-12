@@ -1,3 +1,4 @@
+//#define EIGEN_USE_MKL_ALL
 #ifndef _GPS_H
 #define _GPS_H
 #include <iostream>
@@ -28,7 +29,7 @@ namespace GP {
   public:
     // Constructors
     Kernel(Vector p, int c) : kernelParams(p) , paramCount(c) { };
-    //Kernel(const Kernel & k) : kernelParams(k.kernelParams), paramCount(k.paramCount) { };
+    virtual ~Kernel() = default;
     virtual void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv) = 0;
     int getParamCount() { return paramCount; } ;
     Vector getParams() { return kernelParams; };
@@ -47,8 +48,6 @@ namespace GP {
   public:
     // Constructors
     RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
-    //RBF(const RBF & k) : Kernel(std::move(k)) { };
-    //RBF(const RBF & k) : kernelParams(k.kernelParams), paramCount(paramCount) { };
     void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv);
   private:
     double evalKernel(Matrix&, Matrix&, Vector&, int);
@@ -108,9 +107,7 @@ namespace GP {
     
     // Set methods
     void setObs(Matrix & x, Matrix & y) { obsX = x; obsY = y; N = static_cast<int>(x.rows()); }
-    //void setKernel(Kernel k) { kernel = k; }
-    void setKernel(RBF & k) { kernel = &k; }
-    //void setKernel(std::unique_ptr<Kernel> k) { kernel = std::move(k); }
+    void setKernel(Kernel & k) { kernel = &k; }
     void setPred(Matrix & px) { predX = px; }
 
     // NOISE
@@ -135,9 +132,7 @@ namespace GP {
     int N = 0;
 
     // Kernel and covariance matrix
-    //std::unique_ptr<Kernel> kernel;
     Kernel * kernel;
-    //RBF kernel;    
     double noiseLevel = 0.0;
     bool fixedNoise = false;
     double jitter = 1e-7;

@@ -1,3 +1,4 @@
+//#define EIGEN_USE_MKL_ALL
 #include <iostream>
 #include <cmath>
 #include <array>
@@ -13,30 +14,6 @@
 using Matrix = GP::Matrix;
 using Vector = GP::Vector;
 
-/*
-int GP::RBF::getParamCount()
-{
-  return paramCount;
-}
-
-Vector GP::RBF::getParams()
-{
-  return kernelParams;
-}
-
-void GP::RBF::setParams(Vector params)
-{
-  kernelParams = params;
-}
-*/
-
-/*
-GP::Kernel::Kernel(Vector & p, int n)
-{
-  kernelParams = p;
-  paramCount = n;
-};
-*/
 
 // Define kernel function for RBF
 double GP::RBF::evalKernel(Matrix & x, Matrix & y, Vector & params, int n)
@@ -72,6 +49,8 @@ void GP::RBF::computeCov(Matrix & K, Matrix & D, Vector & params, int deriv)
 {
   // Get matrix input observation count
   auto n = static_cast<int>(D.rows());
+
+  //std::cout << Eigen::nbThreads() << std::endl;
 
   // Define lambda function to create unary operator (by clamping kernelParams argument)      
   auto lambda = [=,&params](double d)->double { return evalDistKernel(d, params, deriv); };

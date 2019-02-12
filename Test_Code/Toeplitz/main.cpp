@@ -1,4 +1,5 @@
 // main.cpp -- test GP class definitions
+//#define EIGEN_USE_MKL_ALL
 #include <iostream>
 #include <cmath>
 #include <string>
@@ -9,6 +10,7 @@
 #include <fstream>
 #include <boost/range/irange.hpp>
 #include "GPs.h"
+
 
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
@@ -128,6 +130,7 @@ int main(int argc, char const *argv[])
   GaussianProcess model;
 
   // Specify observation data
+  //int obsCount = 500;
   int obsCount = 250;
   //int obsCount = 100;
   //int obsCount = 20;
@@ -155,8 +158,10 @@ int main(int argc, char const *argv[])
   //params << 1.0;
 
   RBF kernel;
+  //model.setKernel(kernel);
   model.setKernel(kernel);
   //model.setKernel(std::make_unique<GP::Kernel>(kernel));
+  //model.setKernel(std::make_shared<GP::Kernel>(kernel));
 
 
   // Define kernel for GP model
