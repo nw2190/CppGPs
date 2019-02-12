@@ -31,6 +31,7 @@ namespace GP {
     Kernel(Vector p, int c) : kernelParams(p) , paramCount(c) { };
     virtual ~Kernel() = default;
     virtual void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv) = 0;
+    virtual void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params) = 0;
     int getParamCount() { return paramCount; } ;
     Vector getParams() { return kernelParams; };
     void setParams(Vector params) { kernelParams = params; };
@@ -49,6 +50,7 @@ namespace GP {
     // Constructors
     RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
     void computeCov(Matrix & K, Matrix & D, Vector & params, int deriv);
+    void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params);
   private:
     double evalKernel(Matrix&, Matrix&, Vector&, int);
     double evalDistKernel(double, Vector&, int);
@@ -99,9 +101,9 @@ namespace GP {
     // Get and show methods
     double evalNLML(const Vector & p); //, Matrix & alpha);
     void evalDNLML(const Vector & p, Vector & g); //, Matrix & alpha);
-    //Matrix getPredMean() { return predMean; }
-    //Matrix getPredVar() { return predCov.diagonal() + noiseLevel*Eigen::VectorXd::Ones(predMean.size()); }
-    //Matrix getSamples(int count=10);
+    Matrix getPredMean() { return predMean; }
+    Matrix getPredVar() { return predCov.diagonal() + noiseLevel*Eigen::VectorXd::Ones(predMean.size()); }
+    Matrix getSamples(int count=10);
     decltype(auto) getParams() { return (*kernel).getParams(); }
     double getNoise() { return noiseLevel; }
     
@@ -115,7 +117,7 @@ namespace GP {
     //void setNoise(double noise) { fixedNoise = true; noiseLevel = 0.0; }
     
     // Compute methods
-    //void predict();
+    void predict();
     void fitModel();
 
     // Define method for superclass "GradientObj" used by minimization algorithm

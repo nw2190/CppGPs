@@ -186,7 +186,6 @@ int main(int argc, char const *argv[])
 
 
 
-  /*
   // Define test mesh for predictions
   int predCount = 100;
   auto testMesh = linspace(0.0, 1.0, predCount);
@@ -233,7 +232,7 @@ int main(int argc, char const *argv[])
         }
     }
   fout.close();
-  */
+
   
   return 0;
 }

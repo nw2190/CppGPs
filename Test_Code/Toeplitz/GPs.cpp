@@ -64,6 +64,25 @@ void GP::RBF::computeCov(Matrix & K, Matrix & D, Vector & params, int deriv)
 
 
 
+void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params)
+{
+  // Get matrix input observation count
+  //auto n = static_cast<int>(X1.rows());
+  auto m = static_cast<int>(X2.rows());
+
+  // Evaluate using vectorized implementation of distance kernel,
+  // or apply standard binary kernel function component-wise
+
+  // Define lambda function to create unary operator (by clamping kernelParams argument)      
+  auto lambda = [=,&params](double d)->double { return evalDistKernel(d, params, 0); };
+
+  for ( auto j : boost::irange(0,m) )
+    {
+      K.col(j) = ((X1.rowwise() - X2.row(j)).rowwise().squaredNorm()).unaryExpr(lambda);          
+    }
+};
+
+
 // Precompute distance matrix to avoid repeated calculations during optimization procedure
 void GP::GaussianProcess::computeDistMat()
 {
@@ -333,6 +352,7 @@ void GP::GaussianProcess::fitModel()
   //double INT = 0.1;
   //int MAX = 10;
   //int MAX = 40;
+  //int MAX = 20;
   int MAX = 20;
   double INT = 0.01;
   int length = 1000;
@@ -368,9 +388,14 @@ void GP::GaussianProcess::fitModel()
   // Recompute covariance and Cholesky factor
   //computeCov();
   //computeChol();
+
+  auto N = static_cast<int>(K.rows());
+  Vector params = (*kernel).getParams();
+  (*kernel).computeCov(K, distMatrix, params, 0);
+  cholesky = ( K + (noiseLevel+jitter)*Matrix::Identity(N,N) ).llt();
+  
 };
 
-/*
 // Compute predicted values
 void GP::GaussianProcess::predict()
 {
@@ -378,14 +403,19 @@ void GP::GaussianProcess::predict()
   auto n = static_cast<int>(obsX.rows());
   auto m = static_cast<int>(predX.rows());
 
+  // Get optimized kernel hyperparameters
+  Vector params = (*kernel).getParams();
+  
   // Store cross covariance for test points in kstar
   Matrix kstar;
   kstar.resize(n,m);
-  computeCrossCov(kstar, obsX, predX);
+  (*kernel).computeCrossCov(kstar, obsX, predX, params);
 
   Matrix kstarmat;
   kstarmat.resize(m,m);
-  computeCrossCov(kstarmat, predX, predX);
+  (*kernel).computeCrossCov(kstarmat, predX, predX, params);
+
+
   
   Matrix cholMat(cholesky.matrixL());
   Matrix alpha = cholesky.solve(obsY);
@@ -432,4 +462,4 @@ Matrix GP::GaussianProcess::getSamples(int count)
   
   return samples;
 }
-*/
+
