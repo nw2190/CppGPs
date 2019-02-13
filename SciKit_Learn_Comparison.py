@@ -79,13 +79,15 @@ def main():
     Xtest = np.reshape(inVals, [-1, 1])
 
     # Model parameters
-    n_restarts = 1
+    n_restarts = 0
     normalize_y = False
     use_white_noise = True
     #use_white_noise = False  ### Completely overfit...
     #use_white_noise = False
-    RBF_bounds = [0.01, 500.0]
-    Noise_bounds = [0.00001, 10.0]
+    #RBF_bounds = [0.01, 500.0]
+    #Noise_bounds = [0.00001, 10.0]
+    RBF_bounds = [0.01, 100.0]
+    Noise_bounds = [0.00001, 5.0]
     jitter = 1e-7
     if use_white_noise:
         #kernel = RBF(length_scale=1.0, length_scale_bounds=(0.001,500.0)) + WhiteKernel(noise_level=1, noise_level_bounds=(1e-10, 1e+1))

@@ -232,6 +232,7 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
   K.resize(n,n);
   auto gradList = (*kernel).computeCov(K, distMatrix, params, evalGrad);
   cholesky = ( K + (noise+jitter)*Matrix::Identity(n,n) ).llt();
+  //cholesky = ( (K + (noise+jitter)*Matrix::Identity(n,n)).eval() ).llt();
 
   // Store alpha for DNLML calculation
   _alpha = cholesky.solve(obsY);
@@ -250,10 +251,11 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       if (!fixedNoise)
         {
           // Specify gradient of white noise kernel
-          Matrix dK_noise = noise*Matrix::Identity(n,n);
+          //Matrix dK_noise = noise*Matrix::Identity(n,n);
           
           // Compute trace of full matrix
-          g(index) = 0.5 * (term * dK_noise ).trace() ;
+          //g(index) = 0.5 * (term * dK_noise ).trace() ;
+          g(index) = 0.5 * (term * noise).trace() ;
           index++;
         }
 
@@ -293,12 +295,19 @@ double GP::GaussianProcess::evalNLML(const Vector & p)
 // Define function for uniform sampling
 Matrix GP::sampleUnif(double a, double b, int N)
 {
-  return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
+  //return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
+  return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1) ) + a*Eigen::MatrixXd::Ones(N,1);
 }
 
 // Define function for uniform sampling [Vectors]
 Vector GP::sampleUnifVector(Vector lbs, Vector ubs)
 {
+
+  auto n = static_cast<int>(lbs.rows());
+  //Vector samples = Eigen::MatrixXd::Random(n,1);
+  Vector sampleVector = ((ubs-lbs).array()*( 0.5*Eigen::MatrixXd::Random(n,1) + 0.5*Eigen::MatrixXd::Ones(n,1) ).array()).matrix() + (lbs.array()*Eigen::MatrixXd::Ones(n,1).array()).matrix();
+
+  /*
   auto n = static_cast<int>(lbs.rows());
   Vector sampleVector(n);
   Vector samples = Eigen::MatrixXd::Random(n,1);
@@ -309,8 +318,10 @@ Vector GP::sampleUnifVector(Vector lbs, Vector ubs)
       // NOTE: This can easily be vectorized
       a = lbs(i);
       b = ubs(i);
-      sampleVector(i) = (b-a)*(samples(i) * 0.5 + 0.5*samples(i)) + a*samples(i);
+      //sampleVector(i) = (b-a)*(samples(i) * 0.5 + 0.5*samples(i)) + a*samples(i);
+      sampleVector(i) = (b-a)*(samples(i) * 0.5 + 0.5) + a;
     }
+  */
   return sampleVector;
 }
 
@@ -322,7 +333,8 @@ void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCo
   ubs.resize(augParamCount);
 
   double defaultLowerBound = 0.00001;
-  double defaultUpperBound = 10.0;
+  //double defaultUpperBound = 10.0;
+  double defaultUpperBound = 5.0;
   
   if ( fixedBounds )
     {
@@ -359,7 +371,7 @@ void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCo
   std::cout << "Bounds:\n";
   std::cout << lbs.array().exp().matrix().transpose() << std::endl;
   std::cout << ubs.array().exp().matrix().transpose() << std::endl;
-  std::cout << "Log Bounds:\n";
+  std::cout << "\nLog Bounds:\n";
   std::cout << lbs.transpose() << std::endl;
   std::cout << ubs.transpose() << std::endl << std::endl;
   */
@@ -380,15 +392,35 @@ void GP::GaussianProcess::fitModel()
   // Declare vector for storing gradient calculations
   Vector g(augParamCount);
 
-  // Specify precision of minimization algorithm
-  //int MAX = 10;
-  int MAX = 5;
-  //int length = 100;
-  int length = 10;
-  double INT = 0.01;
-  double SIG = 0.1;
-  double EXT = 3.0;
+  //
+  // Specify the parameters for the minimization algorithm
+  //
+  
+  // /*  HIGH ACCURACY SETTINGS  */ //
+  /*
+  // max of MAX function evaluations per line search
+  int MAX = 30;
+  // max number of line searches = length
+  int length = 20;
+  // don't reevaluate within INT of the limit of the current bracket
+  double INT = 0.00001;
+  // SIG is a constant controlling the Wolfe-Powell conditions
+  double SIG = 0.9;
+  // extrapolate maximum EXT times the current step-size
+  double EXT = 5.0;
+  */
 
+  // /* EFFICIENT SETTINGS */ //
+  int MAX = 15;
+  int length = 10;
+  double INT = 0.00001;
+  double SIG = 0.9;
+  double EXT = 5.0;
+
+  // Define number of exploratory NLML evaluations for specifying
+  // a reasonable initial value for the optimization algorithm
+  int initParamSearchCount = 30;
+    
   // Define restart count for optimizer
   //int restartCount = 10;
   int restartCount = 0;
@@ -403,18 +435,48 @@ void GP::GaussianProcess::fitModel()
   Vector theta(augParamCount);
   Vector optParams(augParamCount);
 
+
+  // First explore hyperparameter space to get a reasonable initializer for optimization
+  for ( auto i : boost::irange(0,initParamSearchCount) )
+    {
+      if ( i == 0 )
+          theta = Eigen::MatrixXd::Zero(augParamCount,1);
+      else
+          theta = sampleUnifVector(lbs, ubs);
+
+      // Compute current NLML and store parameters if optimal
+      currentVal = evalNLML(theta);
+      if ( currentVal < optVal )
+        {
+          optVal = currentVal;
+          optParams = theta;
+        }
+      
+      //std::cout << "Theta Search:  " << theta.transpose() << "  [ NLML = " << currentVal << " ]"<< std::endl;
+
+    }
+
+  // NOTE: THIS NEEDS TO BE RE-WRITTEN TO USE THE PRELIMINARY PARAMETER SEARCH RESULTS
   // Evaluate optimizer with various different initializations
   for ( auto i : boost::irange(0,restartCount) )
     {
       // Avoid compiler warning for unused variable
-      (void)i;
-      
-      // Sample initial hyperparameter vector
-      theta = sampleUnifVector(lbs, ubs);
+      //(void)i;
+
+      if ( i == 0 )
+        {
+          // Set initial guess (should make this user specifiable...)
+          theta = Eigen::MatrixXd::Zero(augParamCount,1);
+        }
+      else
+        {
+          // Sample initial hyperparameter vector
+          theta = sampleUnifVector(lbs, ubs);
+        }
 
       // Optimize hyperparameters
       minimize::cg_minimize(theta, this, g, length, SIG, EXT, INT, MAX);
-
+      
       // Compute current NLML and store parameters if optimal
       currentVal = evalNLML(theta);
       if ( currentVal < optVal )
@@ -425,11 +487,11 @@ void GP::GaussianProcess::fitModel()
     }
 
   // Perform one last optimization starting from best parameters so far
-  if ( restartCount == 0 )
+  if ( ( initParamSearchCount == 0 ) && ( restartCount == 0 ) )
     optParams = sampleUnifVector(lbs, ubs);
-  MAX = 20;
+  //std::cout << "\n[*] FINAL - Initial Values (log):  " << optParams.transpose() << std::endl;
+  //std::cout << "[*] FINAL - Initial Values (std):  " << optParams.transpose().array().exp().matrix() << std::endl;
   minimize::cg_minimize(optParams, this, g, length, SIG, EXT, INT, MAX);
-
   
   // ASSUME OPTIMIZATION OVER LOG VALUES
   for ( auto i : boost::irange(0,augParamCount) )
@@ -444,17 +506,20 @@ void GP::GaussianProcess::fitModel()
   
   (*kernel).setParams(optParams);
 
+  ///* [May be able to omit this if last NLML evaluation was optimal]
   // Recompute covariance and Cholesky factor
   auto N = static_cast<int>(K.rows());
   Vector params = (*kernel).getParams();
   auto nullGradList = (*kernel).computeCov(K, distMatrix, params);
   cholesky = ( K + (noiseLevel+jitter)*Matrix::Identity(N,N) ).llt();
+  //*/
 
 };
 
 // Compute predicted values
 void GP::GaussianProcess::predict()
 {
+
   // Get matrix input observation count
   auto n = static_cast<int>(obsX.rows());
   auto m = static_cast<int>(predX.rows());

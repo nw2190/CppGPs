@@ -28,6 +28,7 @@ float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono:
 double targetFunc(double x)
 {
   //return std::sin(3.0*(x-0.1))*(0.5-(x-0.1))*15.0;
+  //double oscillation = 20.0;
   double oscillation = 20.0;
   return std::sin(oscillation*(x-0.1))*(0.5-(x-0.1))*15.0;
 }
@@ -46,9 +47,11 @@ int main(int argc, char const *argv[])
   using std::chrono::high_resolution_clock;
   using time = high_resolution_clock::time_point;
   
-  // Set random seed
-  //std::srand(static_cast<unsigned int>(high_resolution_clock::now().time_since_epoch().count()));
-  std::srand(static_cast<unsigned int>(0));
+  // Set random seed based on system clock
+  std::srand(static_cast<unsigned int>(high_resolution_clock::now().time_since_epoch().count()));
+
+  // Fix random seed for debugging and testing
+  //std::srand(static_cast<unsigned int>(0));
 
   // Initialize Gaussian process model
   GaussianProcess model;
@@ -94,7 +97,8 @@ int main(int argc, char const *argv[])
   Vector lbs(1);
   lbs <<  0.01;
   Vector ubs(1);
-  ubs <<  500.0;
+  //ubs <<  500.0;
+  ubs <<  100.0;
   model.setBounds(lbs, ubs);
   
 
@@ -114,6 +118,11 @@ int main(int argc, char const *argv[])
   auto noiseL = model.getNoise();
   cout << "(Noise = " << noiseL << ")\n" << endl;
 
+
+
+  //cout << "\nMatrixXd::Random() Samples:";
+  //cout << Eigen::MatrixXd::Random(100,1).transpose() << endl << endl;
+  
 
 
   // Define test mesh for predictions
