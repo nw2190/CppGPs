@@ -79,7 +79,7 @@ def main():
     Xtest = np.reshape(inVals, [-1, 1])
 
     # Model parameters
-    n_restarts = 10
+    n_restarts = 1
     normalize_y = False
     use_white_noise = True
     #use_white_noise = False  ### Completely overfit...

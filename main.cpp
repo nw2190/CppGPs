@@ -3,13 +3,13 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <string>
 #include <memory>
 #include <random>
 #include <chrono>
 #include <fstream>
 #include <boost/range/irange.hpp>
 #include "GPs.h"
-
 
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
@@ -28,7 +28,7 @@ float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono:
 double targetFunc(double x)
 {
   //return std::sin(3.0*(x-0.1))*(0.5-(x-0.1))*15.0;
-  double oscillation = 10.0;
+  double oscillation = 20.0;
   return std::sin(oscillation*(x-0.1))*(0.5-(x-0.1))*15.0;
 }
 
@@ -47,22 +47,23 @@ int main(int argc, char const *argv[])
   using time = high_resolution_clock::time_point;
   
   // Set random seed
-  std::srand(static_cast<unsigned int>(high_resolution_clock::now().time_since_epoch().count()));
-  //std::srand(static_cast<unsigned int>(0));
+  //std::srand(static_cast<unsigned int>(high_resolution_clock::now().time_since_epoch().count()));
+  std::srand(static_cast<unsigned int>(0));
 
   // Initialize Gaussian process model
   GaussianProcess model;
 
   // Specify observation data count
-  //int obsCount = 1000;
+  int obsCount = 1000;
   //int obsCount = 500;
-  int obsCount = 250;  
+  //int obsCount = 250;  
   //int obsCount = 10;
 
   // Specify observation noise level
   //auto noiseLevel = 0.05;
   //auto noiseLevel = 0.15;
-  auto noiseLevel = 0.25;
+  //auto noiseLevel = 0.25;
+  auto noiseLevel = 1.0;
   auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
 
   // Define observations

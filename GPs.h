@@ -6,7 +6,7 @@
 #include <memory>
 #include <cmath>
 #include <Eigen/Dense>
-#include "minimize.h"
+#include "./utils/minimize.h"
 
 
 // Declare namespace for Gaussian process definitions
@@ -105,6 +105,7 @@ namespace GP {
     
 
     // Define method for superclass "GradientObj" used by minimization algorithm
+    //void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
     void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
 
       

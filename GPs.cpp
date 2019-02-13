@@ -8,7 +8,6 @@
 #include <boost/range/irange.hpp>
 #include <Eigen/Dense>
 #include "GPs.h"
-#include "utils.h"
 
 //using namespace GP;
 using Matrix = GP::Matrix;
@@ -48,6 +47,7 @@ void GP::pdist(Matrix & Dv, Matrix & X1, Matrix & X2)
   int k = 0;
   auto entryCount = static_cast<int>( (n*(n-1))/2);
   Dv.resize(entryCount, 1);
+  //#pragma omp parallel for 
   for ( auto i : boost::irange(0,n-1) )
     {      
       for ( auto j : boost::irange(i+1,n) )
@@ -58,13 +58,34 @@ void GP::pdist(Matrix & Dv, Matrix & X1, Matrix & X2)
 // Re-assemble pairwise distances into a dense matrix
 void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 {
-  int k = 0;
+
   D.resize(n,n);
+  /*
+  int k;
+  int shift;
+  int i;
+  int j;
+#pragma omp parallel for private(i,j,k) shared(D,Dv,n)
+  for ( i = 0 ; i<n-1; i++ )
+    {
+      for ( j = i+1 ; j<n ; j++ )
+        {
+          shift = i;
+          k = static_cast<int>(i*n - (i*(i+1))/2 - shift);
+          //std::cout << k << std::endl;
+          D(i,j) = D(j,i) = Dv( k ,0);
+        }
+    }
+  */
+  
+  ///*
+  int k = 0;
   for ( auto i : boost::irange(0,n-1) )
     {
       for ( auto j : boost::irange(i+1,n) )
-          D(i,j) = D(j,i) = Dv(k++,0);
+        D(i,j) = D(j,i) = Dv(k++,0);
     }
+  //*/
 
   D.diagonal() = diagVal * Eigen::MatrixXd::Ones(n,1);
 }
@@ -361,15 +382,17 @@ void GP::GaussianProcess::fitModel()
 
   // Specify precision of minimization algorithm
   //int MAX = 10;
-  int MAX = 10;
-  int length = 100;
+  int MAX = 5;
+  //int length = 100;
+  int length = 10;
   double INT = 0.01;
   double SIG = 0.1;
   double EXT = 3.0;
 
   // Define restart count for optimizer
-  int restartCount = 10;
-
+  //int restartCount = 10;
+  int restartCount = 0;
+  
   // Convert hyperparameter bounds to log-scale
   Vector lbs, ubs;
   parseBounds(lbs, ubs, augParamCount);
@@ -402,7 +425,9 @@ void GP::GaussianProcess::fitModel()
     }
 
   // Perform one last optimization starting from best parameters so far
-  MAX = 30;
+  if ( restartCount == 0 )
+    optParams = sampleUnifVector(lbs, ubs);
+  MAX = 20;
   minimize::cg_minimize(optParams, this, g, length, SIG, EXT, INT, MAX);
 
   

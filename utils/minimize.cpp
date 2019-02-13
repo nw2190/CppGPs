@@ -20,7 +20,8 @@ double minimize::interpolate(double x2, double f2, double d2, double x3, double 
   double f4 = f3;
   double d4 = d3;
 
-  double tolerance = 1e-32;
+  //double tolerance = 1e-32;
+  double tolerance = 1e-64;
 
   if ( f4 > f0 )
     {
@@ -65,7 +66,8 @@ double minimize::cubic_extrap(double x1, double x2, double f1, double f2, double
   double B = 3*(f2-f1)-(2*d1+d2)*(x2-x1);
 
   double x3;
-  double tolerance = 1e-32;
+  //double tolerance = 1e-32;
+  double tolerance = 1e-64;
   double radical = B*B-A*d1*(x2-x1);
 
   if ( radical < 0.0 )
@@ -92,6 +94,7 @@ void minimize::cg_minimize(Vector & X, minimize::GradientObj * target, Vector & 
 {
   // specify optimization hyperparameters
   double RATIO = 10.0;
+  //double RATIO = 1000.0;
   double RHO = SIG/2;
 
   // determine problem dimension
