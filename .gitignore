@@ -125,3 +125,4 @@ Run
 callgrind*
 perf*
 BAK*
+*.png
