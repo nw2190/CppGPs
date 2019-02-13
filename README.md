@@ -5,7 +5,22 @@ Implementation of Numerical Gaussian Processes in C++
 * [Eigen](https://eigen.tuxfamily.org/dox/GettingStarted.html) - high-level C++ library for linear algebra
 * [GCC](https://gcc.gnu.org/) - GNU compiler collection; more specifically the GCC C++ compiler is recommended
 
+
+
+## Regression
+
+The `main.cpp` file provides an example for how to use the CppGP code for Gaussian process regression.  The `targetFunc` function is used to define artificial data for the regression task on the input mesh/grid `x`.  The artificial observation and corresponding predictions/samples are saved in the `observations.csv` and `predictions.csv`/`samples.csv` files, respectively.
+
+
+### Comparison with SciKit Learn Implementation
+
+The results of the CppGP code and SciKit Learn `GaussianProcessRegressor` class can be compared using the `SciKit_Learn_Comparison.py` Python script.  This code provides the estimated kernel/noise parameters and negative log marginal likelihood (NLML) calculations in addition to plots of the CppGP and SciKit Learn results.
+
+
+
+
 ## Profiling
+
 ### Requirements
 * [`valgrind`](http://valgrind.org/docs/manual/quick-start.html) - debugging/profiling tool suite
 * [`perf`](https://en.wikipedia.org/wiki/Perf_(Linux)) - performance analyzing tool for Linux
