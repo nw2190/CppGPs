@@ -4,9 +4,11 @@ Implementation of Numerical Gaussian Processes in C++
 ## Dependencies
 * [Eigen](https://eigen.tuxfamily.org/dox/GettingStarted.html) - High-level C++ library for linear algebra, matrix operations, and solvers
 * [GCC](https://gcc.gnu.org/) - GNU compiler collection; more specifically the GCC C++ compiler is recommended
-* *[NumPy](http://www.numpy.org/) - Scientific computing package for Python
-* *[MatPlotLib](https://matplotlib.org/) - Python plotting library
-* *[SciKit Learn](https://scikit-learn.org/stable/) - Data analysis library for Python
+* (*) [NumPy](http://www.numpy.org/) - Scientific computing package for Python
+* (*) [MatPlotLib](https://matplotlib.org/) - Python plotting library
+* (*) [SciKit Learn](https://scikit-learn.org/stable/) - Data analysis library for Python
+
+(*) Optional dependencies
 
 
 
