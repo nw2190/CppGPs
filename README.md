@@ -5,8 +5,8 @@ Implementation of Numerical Gaussian Processes in C++
 * [Eigen](https://eigen.tuxfamily.org/dox/GettingStarted.html) - high-level C++ library for linear algebra
 * [GCC](https://gcc.gnu.org/) - GNU compiler collection; more specifically the GCC C++ compiler is recommended
 
-# Profiling
-## Requirements
+## Profiling
+### Requirements
 * [`valgrind`](http://valgrind.org/docs/manual/quick-start.html) - debugging/profiling tool suite
 * [`perf`](https://en.wikipedia.org/wiki/Perf_(Linux)) - performance analyzing tool for Linux
 * [`graphviz`](https://www.graphviz.org/) - open source graph visualization software
