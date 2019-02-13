@@ -27,9 +27,9 @@ float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono:
 // Specify the true target function
 double targetFunc(double x)
 {
-  //return std::sin(3.0*(x-0.1))*(0.5-(x-0.1))*15.0;
+  double oscillation = 30.0;
   //double oscillation = 20.0;
-  double oscillation = 20.0;
+  //double oscillation = 10.0;
   return std::sin(oscillation*(x-0.1))*(0.5-(x-0.1))*15.0;
 }
 
@@ -57,8 +57,8 @@ int main(int argc, char const *argv[])
   GaussianProcess model;
 
   // Specify observation data count
-  int obsCount = 1000;
-  //int obsCount = 500;
+  //int obsCount = 1000;
+  int obsCount = 500;
   //int obsCount = 250;  
   //int obsCount = 10;
 

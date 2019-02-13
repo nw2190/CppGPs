@@ -58,6 +58,10 @@ namespace GP {
   private:
     double evalKernel(Matrix&, Matrix&, Vector&, int);
     double evalDistKernel(double, Vector&, int);
+    Matrix Kv;
+    Matrix dK_i;
+    Matrix dK_iv;
+    //std::vector<Matrix> gradList;
   };
 
 
@@ -148,6 +152,10 @@ namespace GP {
     Matrix predCov;
     double NLML = 0.0;
 
+    int paramCount;
+    int augParamCount;
+    Matrix term;
+    //std::vector<Matrix> gradList;  // Need to find a way to avoid creating new gradList each time...
     
   };
 

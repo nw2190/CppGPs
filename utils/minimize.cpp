@@ -308,7 +308,7 @@ void minimize::cg_minimize(Vector & X, minimize::GradientObj * target, Vector & 
           if ( RATIO <  d3/(d0-realmin) )
             {
               x3 = x3 * RATIO;
-              std::cout << "\n[*] RATIO parameter enforced\n";
+              //std::cout << "\n[*] RATIO parameter enforced\n";
             }
           else
               x3 = x3 * d3/(d0-realmin);
