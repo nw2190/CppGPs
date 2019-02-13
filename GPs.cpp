@@ -1,7 +1,6 @@
 //#define EIGEN_USE_MKL_ALL
 #include <iostream>
 #include <cmath>
-#include <array>
 #include <vector>
 #include <chrono>
 #include <memory>
@@ -301,8 +300,8 @@ void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCo
   lbs.resize(augParamCount);
   ubs.resize(augParamCount);
 
-  double defaultLowerBound = 0.001;
-  double defaultUpperBound = 5.0;
+  double defaultLowerBound = 0.00001;
+  double defaultUpperBound = 10.0;
   
   if ( fixedBounds )
     {
@@ -335,6 +334,15 @@ void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCo
       ubs = ( defaultUpperBound * Eigen::MatrixXd::Ones(augParamCount,1) ).array().log().matrix();
     }
 
+  /*
+  std::cout << "Bounds:\n";
+  std::cout << lbs.array().exp().matrix().transpose() << std::endl;
+  std::cout << ubs.array().exp().matrix().transpose() << std::endl;
+  std::cout << "Log Bounds:\n";
+  std::cout << lbs.transpose() << std::endl;
+  std::cout << ubs.transpose() << std::endl << std::endl;
+  */
+
 }
 
 
@@ -352,6 +360,7 @@ void GP::GaussianProcess::fitModel()
   Vector g(augParamCount);
 
   // Specify precision of minimization algorithm
+  //int MAX = 10;
   int MAX = 10;
   int length = 100;
   double INT = 0.01;
@@ -392,6 +401,11 @@ void GP::GaussianProcess::fitModel()
         }
     }
 
+  // Perform one last optimization starting from best parameters so far
+  MAX = 30;
+  minimize::cg_minimize(optParams, this, g, length, SIG, EXT, INT, MAX);
+
+  
   // ASSUME OPTIMIZATION OVER LOG VALUES
   for ( auto i : boost::irange(0,augParamCount) )
     optParams(i) = std::exp(optParams(i));

@@ -2,8 +2,6 @@
 //#define EIGEN_USE_MKL_ALL
 #include <iostream>
 #include <cmath>
-#include <string>
-#include <array>
 #include <vector>
 #include <memory>
 #include <random>
@@ -29,7 +27,9 @@ float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono:
 // Specify the true target function
 double targetFunc(double x)
 {
-  return std::sin(3.0*(x-0.1))*(0.5-(x-0.1))*15.0;
+  //return std::sin(3.0*(x-0.1))*(0.5-(x-0.1))*15.0;
+  double oscillation = 10.0;
+  return std::sin(oscillation*(x-0.1))*(0.5-(x-0.1))*15.0;
 }
 
 // Example using GP class for regression
@@ -54,12 +54,15 @@ int main(int argc, char const *argv[])
   GaussianProcess model;
 
   // Specify observation data count
-  int obsCount = 250;
+  //int obsCount = 1000;
+  //int obsCount = 500;
+  int obsCount = 250;  
   //int obsCount = 10;
 
   // Specify observation noise level
   //auto noiseLevel = 0.05;
-  auto noiseLevel = 0.15;
+  //auto noiseLevel = 0.15;
+  auto noiseLevel = 0.25;
   auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
 
   // Define observations
@@ -90,7 +93,7 @@ int main(int argc, char const *argv[])
   Vector lbs(1);
   lbs <<  0.01;
   Vector ubs(1);
-  ubs <<  5.0;
+  ubs <<  500.0;
   model.setBounds(lbs, ubs);
   
 

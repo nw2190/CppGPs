@@ -2,7 +2,6 @@
 #ifndef _GPS_H
 #define _GPS_H
 #include <iostream>
-#include <array>
 #include <vector>
 #include <memory>
 #include <cmath>

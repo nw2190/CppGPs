@@ -1,6 +1,10 @@
 # CppGPs
 Implementation of Numerical Gaussian Processes in C++
 
+## Dependencies
+* [Eigen](https://eigen.tuxfamily.org/dox/GettingStarted.html) - high-level C++ library for linear algebra
+* [GCC](https://gcc.gnu.org/) - GNU compiler collection; more specifically the GCC C++ compiler is recommended
+
 # Profiling
 ## Requirements
 * [`valgrind`](http://valgrind.org/docs/manual/quick-start.html) - debugging/profiling tool suite
