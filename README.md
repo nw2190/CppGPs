@@ -9,7 +9,8 @@ Implementation of Numerical Gaussian Processes in C++
 
 ## Regression
 
-The `main.cpp` file provides an example for how to use the CppGP code for Gaussian process regression.  The `targetFunc` function is used to define artificial data for the regression task on the input mesh/grid `x`.  The artificial observation and corresponding predictions/samples are saved in the `observations.csv` and `predictions.csv`/`samples.csv` files, respectively.
+### CppGP Implementation
+The `main.cpp` file provides an example for how to use the CppGP code for Gaussian process regression.  The `targetFunc` function is used to define artificial data for the regression task on the input values `x`.  The level of noise in the training observations can also be adjusted via the `noiseLevel` parameter.  The artificial observation and corresponding predictions/samples are saved in the `observations.csv` and `predictions.csv`/`samples.csv` files, respectively.
 
 
 ### Comparison with SciKit Learn Implementation
