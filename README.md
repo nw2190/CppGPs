@@ -4,20 +4,83 @@ Implementation of Numerical Gaussian Processes in C++
 ## Dependencies
 * [Eigen](https://eigen.tuxfamily.org/dox/GettingStarted.html) - High-level C++ library for linear algebra, matrix operations, and solvers
 * [GCC](https://gcc.gnu.org/) - GNU compiler collection; more specifically the GCC C++ compiler is recommended
+* [CppOptLib](https://github.com/PatWie/CppNumericalSolvers) - A header-only optimization library with a C++ L-BFGS implementation
+
+## Optional Dependencies for Plotting / SciKit Learn Comparison
 * [NumPy](http://www.numpy.org/)* - Scientific computing package for Python
 * [MatPlotLib](https://matplotlib.org/)* - Python plotting library
 * [SciKit Learn](https://scikit-learn.org/stable/)* - Data analysis library for Python
 
 
 
-\* Optional dependencies
 
+## Gaussian Process Regression
 
+### Defining the Target Function and Training Data
+The `main.cpp` file provides an example use of the CppGP code for Gaussian process regression.  The `targetFunc` function is used to define artificial training data for the regression task:
+```
+// Specify the target function for Gaussian process regression
+double targetFunc(double x)
+{
+  double oscillation = 30.0;
+  return std::sin(oscillation*(x-0.1))*(0.5-(x-0.1))*15.0;
+}
+```
+The training data consists of a collection of input points `X` along with an associated collection of target values `y`.  This data should be formatted so that `y(i) = targetFunc(X.row(i))` (with an optional additive noise term).  A simple one-dimensional problem setup can be defined as follows:
+```
+int obsCount = 1000;
+Matrix X = sampleUnif(0.0, 1.0, obsCount);
+Matrix y;  y.resize(obsCount, 1);
+```
+Noise can be added to the training target data `y` to better assess the fit of the model's predictive variance.  The level of noise in the training data can be adjusted via the `noiseLevel` parameter and used to define the target data via:
+```
+auto noiseLevel = 1.0;
+auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
+y = X.unaryExpr(std::ptr_fun(targetFunc)) + noise;
+```
 
-## Regression
+### Specifying and Fitting the Gaussian Process Model
 
-### CppGP Implementation
-The `main.cpp` file provides an example for how to use the CppGP code for Gaussian process regression.  The `targetFunc` function is used to define artificial data for the regression task on the input values `x`.  The level of noise in the training observations can also be adjusted via the `noiseLevel` parameter.  The artificial observation and corresponding predictions/samples are saved in the `observations.csv` and `predictions.csv`/`samples.csv` files, respectively.
+```
+// Initialize Gaussian process regression model
+GaussianProcess model;
+
+// Specify training observations for GP model
+model.setObs(X,y);
+
+// Initialize RBF kernel and assign it to the model
+RBF kernel;
+model.setKernel(kernel);
+
+// Specify hyperparameter bounds
+Vector lbs(1);  lbs <<  0.01;
+Vector ubs(1);  ubs <<  100.0;
+model.setBounds(lbs, ubs);
+
+// Fit model to the training data
+model.fitModel();  
+```
+
+### Posterior Predictions and Sample Paths
+```
+// Define test mesh for GP model predictions
+int predCount = 100;
+auto testMesh = linspace(0.0, 1.0, predCount);
+model.setPred(testMesh);
+
+// Compute predicted means and variances for the test points
+model.predict();
+Matrix pmean = model.getPredMean();
+Matrix pvar = model.getPredVar();
+Matrix pstd = (pvar.array().sqrt()).matrix();
+
+// Get sample paths from the posterior distribution of the model
+int sampleCount = 100;
+Matrix samples = model.getSamples(sampleCount);
+```
+
+### Plotting Results of the Trained Gaussian Process Model
+The artificial observation data and corresponding predictions/samples are saved in the `observations.csv` and `predictions.csv`/`samples.csv` files, respectively.  The trained model results can be plotted using the provided Python script `Plot.py`.
 
 
 ### Comparison with SciKit Learn Implementation
