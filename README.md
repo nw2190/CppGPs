@@ -18,7 +18,7 @@ Implementation of Numerical Gaussian Processes in C++
 
 ### Defining the Target Function and Training Data
 The `main.cpp` file provides an example use of the CppGP code for Gaussian process regression.  The `targetFunc` function is used to define artificial training data for the regression task:
-```
+```cpp
 // Specify the target function for Gaussian process regression
 double targetFunc(double x)
 {
@@ -27,13 +27,13 @@ double targetFunc(double x)
 }
 ```
 The training data consists of a collection of input points `X` along with an associated collection of target values `y`.  This data should be formatted so that `y(i) = targetFunc(X.row(i))` (with an optional additive noise term).  A simple one-dimensional problem setup can be defined as follows:
-```
+```cpp
 int obsCount = 1000;
 Matrix X = sampleUnif(0.0, 1.0, obsCount);
 Matrix y;  y.resize(obsCount, 1);
 ```
 Noise can be added to the training target data `y` to better assess the fit of the model's predictive variance.  The level of noise in the training data can be adjusted via the `noiseLevel` parameter and used to define the target data via:
-```
+```cpp
 auto noiseLevel = 1.0;
 auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
 y = X.unaryExpr(std::ptr_fun(targetFunc)) + noise;
@@ -41,7 +41,7 @@ y = X.unaryExpr(std::ptr_fun(targetFunc)) + noise;
 
 ### Specifying and Fitting the Gaussian Process Model
 
-```
+```cpp
 // Initialize Gaussian process regression model
 GaussianProcess model;
 
@@ -62,7 +62,7 @@ model.fitModel();
 ```
 
 ### Posterior Predictions and Sample Paths
-```
+```cpp
 // Define test mesh for GP model predictions
 int predCount = 100;
 auto testMesh = linspace(0.0, 1.0, predCount);
