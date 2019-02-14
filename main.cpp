@@ -18,12 +18,6 @@ using Vector = Eigen::VectorXd;
 template<typename T>
 class CheckType;
 
-// Define function for retrieving time from chrono
-float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end)
-{
-  return static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count() / 1000000.0);
-};
-
 // Specify the true target function
 double targetFunc(double x)
 {
@@ -45,7 +39,9 @@ int main(int argc, char const *argv[])
   
   // Aliases for timing functions with chrono
   using std::chrono::high_resolution_clock;
-  using time = high_resolution_clock::time_point;
+  //using time = high_resolution_clock::time_point;
+  using time = GP::time;
+  using GP::getTime;
   
   // Set random seed based on system clock
   std::srand(static_cast<unsigned int>(high_resolution_clock::now().time_since_epoch().count()));
@@ -57,7 +53,8 @@ int main(int argc, char const *argv[])
   GaussianProcess model;
 
   // Specify observation data count
-  int obsCount = 1000;
+  int obsCount = 2000;
+  //int obsCount = 1000;
   //int obsCount = 500;
   //int obsCount = 250;  
   //int obsCount = 10;

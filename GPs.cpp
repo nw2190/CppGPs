@@ -9,9 +9,20 @@
 #include <Eigen/Dense>
 #include "GPs.h"
 
+// Include CppOptLib files
+#include "./include/cppoptlib/meta.h"
+#include "./include/cppoptlib/boundedproblem.h"
+#include "./include/cppoptlib/solver/lbfgsbsolver.h"
+
 //using namespace GP;
 using Matrix = GP::Matrix;
 using Vector = GP::Vector;
+
+// Define function for retrieving time from chrono
+float GP::getTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end)
+{
+  return static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count() / 1000000.0);
+};
 
 
 // Define kernel function for RBF
@@ -194,16 +205,27 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
 
   // Compute covariance matrix and store Cholesky factor
   K.resize(n,n);
+  //time start = high_resolution_clock::now();
   auto gradList = (*kernel).computeCov(K, distMatrix, params, jitter, evalGrad);
+  //time end = high_resolution_clock::now();
+  //time_computecov += getTime(start, end);
+
+  //start = high_resolution_clock::now();
   cholesky = K.llt();
+  //end = high_resolution_clock::now();
+  //time_cholesky_llt += getTime(start, end);
 
   // Store alpha for DNLML calculation
   _alpha.noalias() = cholesky.solve(obsY);
 
   // Compute NLML value
+  //start = high_resolution_clock::now();
   double NLML_value = 0.5*(obsY.transpose()*_alpha)(0);
   NLML_value += static_cast<Matrix>(cholesky.matrixL()).diagonal().array().log().sum();
   NLML_value += 0.5*n*std::log(2*PI);
+  //end = high_resolution_clock::now();
+  //time_NLML += getTime(start, end);
+
 
   if ( evalGrad )
     {
@@ -213,9 +235,40 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       //
       // [ THIS APPEARS TO BE A COMPUTATIONAL BOTTLE-NECK ]
       //
+
+      //start = high_resolution_clock::now();
+      // Direct evaluation of inverse matrix
       term.noalias() = cholesky.solve(Matrix::Identity(n,n)) - _alpha*_alpha.transpose();
 
+
+      /*
+      //
+      //          ---  PARALLEL IMPLEMENTATION  ---
+      //
+      //  [ Typically much slower; possibly not thread-safe... ]
+      //
+      term.resize(n,n);
+      //Matrix ei = Eigen::MatrixXd::Zero(n,1);
+      int i = 0;
+      //#pragma omp parallel for private(i) shared(cholesky, term, n)
+#pragma omp parallel for private(i) shared(cholesky, _alpha, term, n)
+      for ( i=0 ; i<n ; i++ )
+        {
+          Matrix ei = Eigen::MatrixXd::Zero(n,1);
+          ei(i) = 1.0;
+          //term.col(i) = cholesky.solve(ei);
+          term.col(i) = cholesky.solve(ei);
+          term.col(i) -= _alpha(i)*_alpha;
+        }
+      */
+
       
+      //term.noalias() -= _alpha*_alpha.transpose();
+      //end = high_resolution_clock::now();
+      //time_term += getTime(start, end);
+
+      
+      //start = high_resolution_clock::now();      
       // Compute gradient for noise term if 'fixedNoise=false'
       int index = 0;
       if (!fixedNoise)
@@ -230,6 +283,9 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
           // Compute trace of full matrix
           g(index++) = 0.5 * (term * (*dK_i) ).trace() ;
         }
+      //end = high_resolution_clock::now();
+      //time_grad += getTime(start, end);
+
     }
 
   return NLML_value;
@@ -317,6 +373,7 @@ void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCo
 // Fit model hyperparameters
 void GP::GaussianProcess::fitModel()
 {
+
   // Get combined parameter/noise vector size
   paramCount = (*kernel).getParamCount();
   augParamCount = (fixedNoise) ? static_cast<int>(paramCount) : static_cast<int>(paramCount) + 1 ;
@@ -331,104 +388,20 @@ void GP::GaussianProcess::fitModel()
   // Declare vector for storing gradient calculations
   Vector g(augParamCount);
 
-  //
-  // Specify the parameters for the minimization algorithm
-  //
-  
-  // /*  HIGH ACCURACY SETTINGS  */ //
-  /*
-  // max of MAX function evaluations per line search
-  int MAX = 30;
-  // max number of line searches = length
-  int length = 20;
-  // don't reevaluate within INT of the limit of the current bracket
-  double INT = 0.00001;
-  // SIG is a constant controlling the Wolfe-Powell conditions
-  double SIG = 0.9;
-  // extrapolate maximum EXT times the current step-size
-  double EXT = 5.0;
-  */
+  // Initialize gradient vector size
+  cppOptLibgrad.resize(augParamCount);
 
-  // /* EFFICIENT SETTINGS */ //
-  int MAX = 15;
-  int length = 10;
-  double INT = 0.00001;
-  double SIG = 0.9;
-  double EXT = 5.0;
-
-  // Define number of exploratory NLML evaluations for specifying
-  // a reasonable initial value for the optimization algorithm
-  int initParamSearchCount = 30;
-    
-  // Define restart count for optimizer
-  int restartCount = 0;
-  
   // Convert hyperparameter bounds to log-scale
   Vector lbs, ubs;
   parseBounds(lbs, ubs, augParamCount);
 
-  // Declare variables to store optimization loop results
-  double currentVal;
-  double optVal = 1e9;
-  Vector theta(augParamCount);
-  Vector optParams(augParamCount);
+  Vector optParams = Eigen::MatrixXd::Zero(augParamCount,1);
 
+  this->setLowerBound(lbs);
+  this->setUpperBound(ubs);
+  cppoptlib::LbfgsbSolver<GaussianProcess> solver;
+  solver.minimize(*this, optParams);
 
-  // First explore hyperparameter space to get a reasonable initializer for optimization
-  for ( auto i : boost::irange(0,initParamSearchCount) )
-    {
-      if ( i == 0 )
-          theta = Eigen::MatrixXd::Zero(augParamCount,1);
-      else
-          theta = sampleUnifVector(lbs, ubs);
-
-      // Compute current NLML and store parameters if optimal
-      currentVal = evalNLML(theta);
-      if ( currentVal < optVal )
-        {
-          optVal = currentVal;
-          optParams = theta;
-        }
-      //std::cout << "Theta Search:  " << theta.transpose() << "  [ NLML = " << currentVal << " ]"<< std::endl;
-    }
-
-  // NOTE: THIS NEEDS TO BE RE-WRITTEN TO USE THE PRELIMINARY PARAMETER SEARCH RESULTS
-  // Evaluate optimizer with various different initializations
-  for ( auto i : boost::irange(0,restartCount) )
-    {
-      // Avoid compiler warning for unused variable
-      //(void)i;
-
-      if ( i == 0 )
-        {
-          // Set initial guess (should make this user specifiable...)
-          theta = Eigen::MatrixXd::Zero(augParamCount,1);
-        }
-      else
-        {
-          // Sample initial hyperparameter vector
-          theta = sampleUnifVector(lbs, ubs);
-        }
-
-      // Optimize hyperparameters
-      minimize::cg_minimize(theta, this, g, length, SIG, EXT, INT, MAX);
-      
-      // Compute current NLML and store parameters if optimal
-      currentVal = evalNLML(theta);
-      if ( currentVal < optVal )
-        {
-          optVal = currentVal;
-          optParams = theta;
-        }
-    }
-
-  // Perform one last optimization starting from best parameters so far
-  if ( ( initParamSearchCount == 0 ) && ( restartCount == 0 ) )
-    optParams = sampleUnifVector(lbs, ubs);
-  //std::cout << "\n[*] FINAL - Initial Values (log):  " << optParams.transpose() << std::endl;
-  //std::cout << "[*] FINAL - Initial Values (std):  " << optParams.transpose().array().exp().matrix() << std::endl;
-  minimize::cg_minimize(optParams, this, g, length, SIG, EXT, INT, MAX);
-  
   // ASSUME OPTIMIZATION OVER LOG VALUES
   optParams = optParams.array().exp().matrix();
   
@@ -441,6 +414,8 @@ void GP::GaussianProcess::fitModel()
   
   (*kernel).setParams(optParams);
 
+
+  //start = high_resolution_clock::now();
   ///* [May be able to omit this if last NLML evaluation was optimal]
   // Recompute covariance and Cholesky factor
   auto N = static_cast<int>(K.rows());
@@ -448,7 +423,25 @@ void GP::GaussianProcess::fitModel()
   auto nullGradList = (*kernel).computeCov(K, distMatrix, params);
   cholesky = ( K + (noiseLevel+jitter)*Matrix::Identity(N,N) ).llt();
   //*/
+  //end = high_resolution_clock::now();
+  //time_final_chol += getTime(start, end);
+  
 
+  // DISPLAY TIMING INFORMATION
+  /*
+  std::cout << "\n\n Time Diagnostics |\n";
+  std::cout << "------------------\n";
+  std::cout << "computeCov():\t  " << time_computecov  << std::endl;
+  std::cout << "cholesky.llt():\t  " << time_cholesky_llt  << std::endl;
+  std::cout << "NLML:\t  \t  " << time_NLML  << std::endl;
+  std::cout << "Grad term:\t  " << time_term  << std::endl;
+  std::cout << "Gradient:\t  " << time_grad  << std::endl;
+  std::cout << "\n" << std::endl;
+  std::cout << "paramSearch:\t  " << time_paramsearch  << std::endl;
+  std::cout << "Minimize:\t  " << time_minimize  << std::endl;
+  std::cout << "Final Cholesky:\t  " << time_final_chol  << std::endl;
+  */
+  
 };
 
 // Compute predicted values
@@ -512,3 +505,130 @@ Matrix GP::GaussianProcess::getSamples(int count)
   return samples;
 }
 
+
+
+
+//
+//   ORIGINAL MINIMIZATION IMPLEMENTATION USING RASMUSSEN'S CODE
+//
+
+//
+//    NOTE:
+//
+//    Remember to include "utils/minimize.h" and derive the
+//   'GaussianProcess' class from the 'GradientObj' class:
+//
+//    i.e.  class GaussianProcess : public minimize::GradientObj
+//
+
+/*
+void minimize(...)
+{
+
+
+  //
+  // Specify the parameters for the minimization algorithm
+  //
+  
+  //   HIGH ACCURACY SETTINGS   //
+  // max of MAX function evaluations per line search
+  //int MAX = 30;
+  // max number of line searches = length
+  //int length = 20;
+  // don't reevaluate within INT of the limit of the current bracket
+  //double INT = 0.00001;
+  // SIG is a constant controlling the Wolfe-Powell conditions
+  //double SIG = 0.9;
+  // extrapolate maximum EXT times the current step-size
+  //double EXT = 5.0;
+
+  //  EFFICIENT SETTINGS  //
+
+
+  int MAX = 15;
+  int length = 10;
+  double INT = 0.00001;
+  double SIG = 0.9;
+  double EXT = 5.0;
+
+  // Define number of exploratory NLML evaluations for specifying
+  // a reasonable initial value for the optimization algorithm
+  int initParamSearchCount = 30;
+    
+  // Define restart count for optimizer
+  int restartCount = 0;
+  
+  // Convert hyperparameter bounds to log-scale
+  Vector lbs, ubs;
+  parseBounds(lbs, ubs, augParamCount);
+
+  // Declare variables to store optimization loop results
+  double currentVal;
+  double optVal = 1e9;
+  Vector theta(augParamCount);
+  Vector optParams(augParamCount);
+
+  //time start = high_resolution_clock::now();
+  // First explore hyperparameter space to get a reasonable initializer for optimization
+  for ( auto i : boost::irange(0,initParamSearchCount) )
+    {
+      if ( i == 0 )
+          theta = Eigen::MatrixXd::Zero(augParamCount,1);
+      else
+          theta = sampleUnifVector(lbs, ubs);
+
+      // Compute current NLML and store parameters if optimal
+      currentVal = evalNLML(theta);
+      if ( currentVal < optVal )
+        {
+          optVal = currentVal;
+          optParams = theta;
+        }
+      //std::cout << "Theta Search:  " << theta.transpose() << "  [ NLML = " << currentVal << " ]"<< std::endl;
+    }
+  //time end = high_resolution_clock::now();
+  //time_paramsearch += getTime(start, end);
+
+
+  // NOTE: THIS NEEDS TO BE RE-WRITTEN TO USE THE PRELIMINARY PARAMETER SEARCH RESULTS
+  // Evaluate optimizer with various different initializations
+  for ( auto i : boost::irange(0,restartCount) )
+    {
+      // Avoid compiler warning for unused variable
+      //(void)i;
+
+      if ( i == 0 )
+        {
+          // Set initial guess (should make this user specifiable...)
+          theta = Eigen::MatrixXd::Zero(augParamCount,1);
+        }
+      else
+        {
+          // Sample initial hyperparameter vector
+          theta = sampleUnifVector(lbs, ubs);
+        }
+
+      // Optimize hyperparameters
+      minimize::cg_minimize(theta, this, g, length, SIG, EXT, INT, MAX);
+      
+      // Compute current NLML and store parameters if optimal
+      currentVal = evalNLML(theta);
+      if ( currentVal < optVal )
+        {
+          optVal = currentVal;
+          optParams = theta;
+        }
+    }
+
+  // Perform one last optimization starting from best parameters so far
+  if ( ( initParamSearchCount == 0 ) && ( restartCount == 0 ) )
+    optParams = sampleUnifVector(lbs, ubs);
+  //std::cout << "\n[*] FINAL - Initial Values (log):  " << optParams.transpose() << std::endl;
+  //std::cout << "[*] FINAL - Initial Values (std):  " << optParams.transpose().array().exp().matrix() << std::endl;
+  //start = high_resolution_clock::now();
+  minimize::cg_minimize(optParams, this, g, length, SIG, EXT, INT, MAX);
+  //end = high_resolution_clock::now();
+  //time_minimize += getTime(start, end);
+
+}
+*/

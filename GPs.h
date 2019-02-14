@@ -4,9 +4,15 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <chrono>
 #include <cmath>
 #include <Eigen/Dense>
-#include "./utils/minimize.h"
+//#include "./utils/minimize.h"
+
+// Include CppOptLib files
+#include "./include/cppoptlib/meta.h"
+#include "./include/cppoptlib/boundedproblem.h"
+#include "./include/cppoptlib/solver/lbfgsbsolver.h"
 
 
 // Declare namespace for Gaussian process definitions
@@ -19,6 +25,11 @@ namespace GP {
   using Matrix = Eigen::MatrixXd;
   using Vector = Eigen::VectorXd;
 
+  // Define function for retrieving time from chrono
+  float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end);
+  using time = std::chrono::high_resolution_clock::time_point;
+  using std::chrono::high_resolution_clock;
+  
   // Define function for sampling uniform distribution on interval
   Matrix sampleUnif(double a=0.0, double b=1.0, int N=1);
   Vector sampleUnifVector(Vector lbs, Vector ubs);
@@ -66,15 +77,22 @@ namespace GP {
   };
 
 
-  
+
   
   // Define class for Gaussian processes
-  class GaussianProcess : public minimize::GradientObj
+  class GaussianProcess : public cppoptlib::BoundedProblem<double>
   {    
   public:
-    // Constructors
-    GaussianProcess() : dimIn(1) { }
-    GaussianProcess(int din) : dimIn(din) { }
+
+    using Superclass = cppoptlib::BoundedProblem<double>;
+    
+    // Constructors  [ Initialize lowerBounds / upperBounds of CppOptLib superclass to zero ]
+    GaussianProcess() : Superclass(Vector(0), Vector(0)) { }
+
+    // Define CppOptLib methods
+    double value(const Vector &p) { return evalNLML(p, cppOptLibgrad, true); }
+    void gradient(const Vector &p, Vector &g) { g = cppOptLibgrad; }
+    Vector cppOptLibgrad;
 
     // Set methods
     void setObs(Matrix & x, Matrix & y) { obsX = x; obsY = y; N = static_cast<int>(x.rows()); }
@@ -109,8 +127,7 @@ namespace GP {
     double evalNLML(const Vector & p, Vector & g, bool evalGrad=false);
     void computeDistMat();
     
-    // Status variables
-    int dimIn;
+    // Status variables  ( still needed ? )
     int N = 0;
 
     // Kernel and covariance matrix
@@ -131,8 +148,8 @@ namespace GP {
     Matrix _alpha;
     
     // Observation data
-    Matrix obsX; // size: N x dimIn
-    Matrix obsY; // size: N x 1
+    Matrix obsX; 
+    Matrix obsY; 
     
     // Prediction data
     Matrix predX;
@@ -144,7 +161,18 @@ namespace GP {
     int augParamCount;
     Matrix term;
     //std::vector<Matrix> gradList;  // Need to find a way to avoid creating new gradList each time...
-    
+
+    // DEFINE TIMER VARIABLES
+    /*
+    double time_computecov = 0.0;
+    double time_cholesky_llt = 0.0;
+    double time_NLML = 0.0;
+    double time_term = 0.0;
+    double time_grad = 0.0;
+    double time_paramsearch = 0.0;
+    double time_minimize = 0.0;
+    double time_final_chol = 0.0;
+    */
   };
 
   // Define linspace function for generating
