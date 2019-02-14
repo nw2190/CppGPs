@@ -4,7 +4,7 @@ Implementation of Numerical Gaussian Processes in C++
 ## Dependencies
 * [Eigen](https://eigen.tuxfamily.org/dox/GettingStarted.html) - High-level C++ library for linear algebra, matrix operations, and solvers
 * [GCC](https://gcc.gnu.org/) - GNU compiler collection; more specifically the GCC C++ compiler is recommended
-* [CppOptLib](https://github.com/PatWie/CppNumericalSolvers) - A header-only optimization library with a C++ L-BFGS implementation
+* [CppOptimizationLibrary](https://github.com/PatWie/CppNumericalSolvers) - A header-only optimization library with a C++ L-BFGS implementation
 
 ### Optional Dependencies for Plotting / SciKit Learn Comparison
 * [NumPy](http://www.numpy.org/) - Scientific computing package for Python
@@ -133,3 +133,9 @@ perf script | c++filt | gprof2dot -s -n 5.0 -f perf | dot -Tpng -o output.png
 
 
 __Note:__ The `-s` flag can also be removed from the `gprof2dot` call to show parameter types.  The `-n` flag is used to specify the percentage threshold for ommitting nodes.
+
+
+## References
+__Gaussian Processes for Machine Learning__ is an extremely useful reference written by Carl Rasmussen and Christopher Williams; the book has also been made freely available on the [book webpage](http://www.gaussianprocess.org/gpml/).
+__CppOptimizationLibrary__ is an extensive header-only library written by Patrick Wieschollek with C++ implementations for a diverse collection of optimization algorithms.
+__SciKit Learn__ provides a [Gaussian Process](https://scikit-learn.org/stable/modules/gaussian_process.html) Python module with an extensive collection of covariance kernels and options.
