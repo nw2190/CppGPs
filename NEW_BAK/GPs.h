@@ -34,6 +34,7 @@ namespace GP {
     // Constructors
     Kernel(Vector p, int c) : kernelParams(p) , paramCount(c) { };
     virtual ~Kernel() = default;
+    //virtual std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, bool evalGrad=false) = 0;
     virtual std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, double jitter=0.0, bool evalGrad=false) = 0;
     virtual void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params) = 0;
     void setNoise(double noise) { noiseLevel = noise; }
@@ -55,6 +56,7 @@ namespace GP {
   public:
     // Constructors
     RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
+    //std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, bool evalGrad=false);
     std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, double jitter=0.0, bool evalGrad=false);
     void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params);
   private:
@@ -63,6 +65,7 @@ namespace GP {
     Matrix Kv;
     Matrix dK_i;
     Matrix dK_iv;
+    //std::vector<Matrix> gradList;
   };
 
 
@@ -75,6 +78,17 @@ namespace GP {
     // Constructors
     GaussianProcess() : dimIn(1) { }
     GaussianProcess(int din) : dimIn(din) { }
+    // Copy Constructor
+    /*
+    GaussianProcess(const GaussianProcess & m) :
+      kernel( (m.kernel) ?  std::move(m.kernel) : nullptr ) ,
+      noiseLevel(m.noiseLevel),
+      fixedNoise(m.fixedNoise),
+      obsX(m.obsX) ,
+      obsY(m.obsY)
+    { N = static_cast<int>(obsX.rows()); }
+    //{ std::cout << "\nCOPY\n"; N = static_cast<int>(obsX.rows()); }
+    */
 
     // Set methods
     void setObs(Matrix & x, Matrix & y) { obsX = x; obsY = y; N = static_cast<int>(x.rows()); }
@@ -99,6 +113,7 @@ namespace GP {
     
 
     // Define method for superclass "GradientObj" used by minimization algorithm
+    //void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
     void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
 
       
@@ -127,6 +142,7 @@ namespace GP {
     void parseBounds(Vector & lbs, Vector & ubs, int augParamCount);
       
     // Store squared distance matrix and alpha for NLML/DNLML calculations
+    //Matrix distMatrix;
     Matrix distMatrix;    
     Matrix _alpha;
     
