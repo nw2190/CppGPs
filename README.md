@@ -102,6 +102,13 @@ Matrix samples = model.getSamples(sampleCount);
 The artificial observation data and corresponding predictions/samples are saved in the `observations.csv` and `predictions.csv`/`samples.csv` files, respectively.  The trained model results can be plotted using the provided Python script `Plot.py`.
 
 
+<p align="center">
+  <img width="250" src="utils/example_plot.png" style="margin: auto;">
+</p>
+
+
+
+
 ### Comparison with SciKit Learn Implementation
 
 The results of the CppGP code and SciKit Learn `GaussianProcessRegressor` class can be compared using the `SciKit_Learn_Comparison.py` Python script.  This code provides the estimated kernel/noise parameters and negative log marginal likelihood (NLML) calculations in addition to plots of the CppGP and SciKit Learn results.
