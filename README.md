@@ -40,7 +40,7 @@ NLML:  1039.64
 
 ```
 
-__Note:__ A slight speed-up in the runtime may be achieved by installing [gperftools](https://github.com/gperftools/gperftools) by prefacing the run statement with the `LD_PRELOAD` environment variable set to the [TCMalloc](http://goog-perftools.sourceforge.net/doc/tcmalloc.html) shared object:
+__Note:__ A slight reduction in the run time may be achieved by installing [gperftools](https://github.com/gperftools/gperftools) and prefacing the run statement with the `LD_PRELOAD` environment variable set to the path of the [TCMalloc](http://goog-perftools.sourceforge.net/doc/tcmalloc.html) shared object:
 ```console
 user@host $ LD_PRELOAD=/usr/lib/libtcmalloc.so.4 ./Run
 ```
