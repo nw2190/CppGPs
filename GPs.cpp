@@ -86,8 +86,7 @@ std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params
 // Compute cross covariance between two input vectors using kernel parameters params
 void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params)
 {
-  // Get matrix input observation count
-  //auto n = static_cast<int>(X1.rows());
+  // Get prediction count
   auto m = static_cast<int>(X2.rows());
 
    // Define lambda function to create unary operator (by clamping kernelParams argument)      
@@ -318,6 +317,20 @@ void GP::GaussianProcess::fitModel()
 
   // ASSUME OPTIMIZATION OVER LOG VALUES
   optParams = optParams.array().exp().matrix();
+
+
+  //start = high_resolution_clock::now();
+  ///* [ This is included in the SciKit Learn model.fit() call as well ]
+
+  // Recompute covariance and Cholesky factor
+  auto nullGradList = (*kernel).computeCov(K, distMatrix, optParams);
+  cholesky = K.llt();
+  _alpha.noalias() = cholesky.solve(obsY);
+  
+  //*/
+  //end = high_resolution_clock::now();
+  //time_final_chol += getTime(start, end);
+  
   
   // Assign tuned parameters to model
   if (!fixedNoise)
@@ -328,18 +341,6 @@ void GP::GaussianProcess::fitModel()
   
   (*kernel).setParams(optParams);
 
-
-  //start = high_resolution_clock::now();
-  ///* [May be able to omit this if last NLML evaluation was optimal]
-  // Recompute covariance and Cholesky factor
-  auto N = static_cast<int>(K.rows());
-  Vector params = (*kernel).getParams();
-  auto nullGradList = (*kernel).computeCov(K, distMatrix, params);
-  cholesky = ( K + (noiseLevel+jitter)*Matrix::Identity(N,N) ).llt();
-  //*/
-  //end = high_resolution_clock::now();
-  //time_final_chol += getTime(start, end);
-  
 
   // DISPLAY TIMING INFORMATION
   /*
@@ -380,12 +381,13 @@ void GP::GaussianProcess::predict()
 
   // Possible redundant calculations; should simplify...
   Matrix cholMat(cholesky.matrixL());
-  Matrix alpha = cholesky.solve(obsY);
+  //Matrix alpha = cholesky.solve(obsY);
   Matrix v = kstar;
   cholMat.triangularView<Eigen::Lower>().solveInPlace(v);
 
   // Set predictive means/variances and compute negative log marginal likelihood
-  predMean = kstar.transpose() * alpha;
+  //predMean = kstar.transpose() * alpha;
+  predMean = kstar.transpose() * _alpha;
   predCov = kstarmat - v.transpose() * v;
 
 }

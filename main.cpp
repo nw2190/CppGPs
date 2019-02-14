@@ -53,8 +53,8 @@ int main(int argc, char const *argv[])
   GaussianProcess model;
 
   // Specify observation data count
-  int obsCount = 2000;
-  //int obsCount = 1000;
+  //int obsCount = 2000;
+  int obsCount = 1000;
   //int obsCount = 500;
   //int obsCount = 250;  
   //int obsCount = 10;
@@ -94,7 +94,6 @@ int main(int argc, char const *argv[])
   Vector lbs(1);
   lbs <<  0.01;
   Vector ubs(1);
-  //ubs <<  500.0;
   ubs <<  100.0;
   model.setBounds(lbs, ubs);
   
@@ -114,12 +113,6 @@ int main(int argc, char const *argv[])
   cout << "\nOptimized Hyperparameters:" << endl << optParams.transpose() << "  ";
   auto noiseL = model.getNoise();
   cout << "(Noise = " << noiseL << ")\n" << endl;
-
-
-
-  //cout << "\nMatrixXd::Random() Samples:";
-  //cout << Eigen::MatrixXd::Random(100,1).transpose() << endl << endl;
-  
 
 
   // Define test mesh for predictions
