@@ -14,7 +14,7 @@
 #include "./include/cppoptlib/boundedproblem.h"
 #include "./include/cppoptlib/solver/lbfgsbsolver.h"
 
-//using namespace GP;
+// Retrieve aliases from GP namescope
 using Matrix = GP::Matrix;
 using Vector = GP::Vector;
 

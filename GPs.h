@@ -37,20 +37,33 @@ namespace GP {
   // Define utility functions for computing distance matrices
   void pdist(Matrix & Dv, Matrix & X1, Matrix & X2);
   void squareForm(Matrix & D, Matrix & Dv, int n, double diagVal=0.0);
+
   
   // Define abstract base class for covariance kernels
   class Kernel 
   {    
   public:
-    // Constructors
+
+    // Constructor and destructor
     Kernel(Vector p, int c) : kernelParams(p) , paramCount(c) { };
     virtual ~Kernel() = default;
+
+    // Compute the covariance matrix provided a "distance matrix" consisting of pairwise squared norms between points
     virtual std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, double jitter=0.0, bool evalGrad=false) = 0;
+
+    // Compute the (cross-)covariance matrix for specified input vectors X1 and X2
     virtual void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params) = 0;
+
+    // Set the noise level which is to be added to the diagonal of the covariance matrix
     void setNoise(double noise) { noiseLevel = noise; }
+
+    // Set method for specifying the kernel parameters
+    void setParams(Vector params) { kernelParams = params; };
+
+    // Get methods for retrieving the kernel paramaters
     int getParamCount() { return paramCount; } ;
     Vector getParams() { return kernelParams; };
-    void setParams(Vector params) { kernelParams = params; };
+
   protected:
     Vector kernelParams;
     int paramCount;
@@ -64,13 +77,22 @@ namespace GP {
   class RBF : public Kernel
   {
   public:
-    // Constructors
+
+    // Constructor
     RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
+
+    // Compute the covariance matrix provided a "distance matrix" consisting of pairwise squared norms between points
     std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, double jitter=0.0, bool evalGrad=false);
+
+    // Compute the (cross-)covariance matrix for specified input vectors X1 and X2
     void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params);
+    
   private:
+
+    // Functions for evaluating the kernel on a pair of points / a specified squared distance
     double evalKernel(Matrix&, Matrix&, Vector&, int);
     double evalDistKernel(double, Vector&, int);
+    
     Matrix Kv;
     Matrix dK_i;
     Matrix dK_iv;
@@ -84,12 +106,14 @@ namespace GP {
   {    
   public:
 
+    // Define alias for base class CppOptLib "BoundedProblem" for use in initialization list
     using Superclass = cppoptlib::BoundedProblem<double>;
     
     // Constructors  [ Initialize lowerBounds / upperBounds of CppOptLib superclass to zero ]
     GaussianProcess() : Superclass(Vector(0), Vector(0)) { }
 
     // Define CppOptLib methods
+    // [ 'value' returns NLML and 'gradient' asigns the associated gradient vector to 'g' ]
     double value(const Vector &p) { return evalNLML(p, cppOptLibgrad, true); }
     void gradient(const Vector &p, Vector &g) { g = cppOptLibgrad; }
     Vector cppOptLibgrad;
@@ -116,10 +140,9 @@ namespace GP {
     double getNoise() { return noiseLevel; }
     
 
-    // Define method for superclass "GradientObj" used by minimization algorithm
-    void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
+    // Define method for superclass "GradientObj" used by 'cg_minimize' [only needed when using "./utils/minimize.h"]
+    //void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
 
-      
   private:
     
     // Private member functions

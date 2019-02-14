@@ -8,7 +8,7 @@ RM=rm -f
 ### GCC OPTIMIZED
 FLAGS=-std=c++17 -g -march=native -fopenmp -O3
 
-### ALTERNATES
+### ALTERNATE
 #FLAGS=-std=c++17 -g -floop-parallelize-all -ftree-parallelize-loops=4 -march=native -fopenmp -O3
 
 ### INTEL MKL
