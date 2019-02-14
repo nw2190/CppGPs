@@ -134,7 +134,7 @@ __Note:__ This will take _much_ more time to run than the standard execution tim
 A graph visualization of the node-wise executation times in the program can then be created via:
 ```
 perf record -g -- ./Run
-perf script | c++filt | gprof2dot -s -n 5.0 -f perf | dot -Tpng -o utils/profilier_output.png
+perf script | c++filt | gprof2dot -s -n 5.25 -f perf | dot -Tpng -o utils/profilier_output.png
 ```
 [//]: # (COMMENT: perf script | c++filt | python /usr/lib/python3.7/site-packages/gprof2dot.py -f perf | dot -Tpng -o output.png)
 
