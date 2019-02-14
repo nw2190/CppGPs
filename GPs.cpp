@@ -26,7 +26,6 @@ void GP::pdist(Matrix & Dv, Matrix & X1, Matrix & X2)
   int k = 0;
   auto entryCount = static_cast<int>( (n*(n-1))/2);
   Dv.resize(entryCount, 1);
-  //#pragma omp parallel for 
   for ( auto i : boost::irange(0,n-1) )
     {      
       for ( auto j : boost::irange(i+1,n) )

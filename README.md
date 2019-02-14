@@ -134,7 +134,7 @@ __Note:__ This will take _much_ more time to run than the standard execution tim
 A graph visualization of the node-wise executation times in the program can then be created via:
 ```
 perf record -g -- ./Run
-perf script | c++filt | gprof2dot -s -n 5.0 -f perf | dot -Tpng -o output.png
+perf script | c++filt | gprof2dot -s -n 5.0 -f perf | dot -Tpng -o utils/output.png
 ```
 [//]: # (COMMENT: perf script | c++filt | python /usr/lib/python3.7/site-packages/gprof2dot.py -f perf | dot -Tpng -o output.png)
 
@@ -144,6 +144,8 @@ __Note:__ The `-s` flag can also be removed from the `gprof2dot` call to show pa
 
 ## References
 __Gaussian Processes for Machine Learning__ is an extremely useful reference written by Carl Rasmussen and Christopher Williams; the book has also been made freely available on the [book webpage](http://www.gaussianprocess.org/gpml/).
+
+__Eigen__ provides a header-only library for linear algebra, matrix operations, and solving linear systems.  The [Getting Started](https://eigen.tuxfamily.org/dox/GettingStarted.html) page of the Eigen documentation provides a basic introduction to the library.
 
 __CppOptimizationLibrary__ is an extensive header-only library written by Patrick Wieschollek with C++ implementations for a diverse collection of optimization algorithms; the library is availble in the GitHub repository [PatWie/CppNumericalSolvers](https://github.com/PatWie/CppNumericalSolvers).
 
