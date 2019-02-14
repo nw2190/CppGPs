@@ -1,5 +1,9 @@
-// main.cpp -- test GP class definitions
-//#define EIGEN_USE_MKL_ALL
+// main.cpp -- example use of CppGPs for Gaussian process regression
+
+// Eigen macros for using externel routines (may need to be moved to header file)
+//#define EIGEN_USE_BLAS            // Must also link to BLAS library
+//#define EIGEN_USE_LAPACKE_STRICT  // Must also link to LAPACKE library
+//#define EIGEN_USE_MKL_ALL         // Must also link to Intel MKL library
 #include <iostream>
 #include <cmath>
 #include <vector>

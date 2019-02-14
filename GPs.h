@@ -1,4 +1,3 @@
-//#define EIGEN_USE_MKL_ALL
 #ifndef _GPS_H
 #define _GPS_H
 #include <iostream>

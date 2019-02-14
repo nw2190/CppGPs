@@ -14,6 +14,9 @@ FLAGS=-std=c++17 -I${EIGENPATH} -g -march=native -fopenmp -O3
 ### ALTERNATE
 #FLAGS=-std=c++17 -I${EIGENPATH} -g -floop-parallelize-all -ftree-parallelize-loops=4 -march=native -fopenmp -O3
 
+### LAPACKE
+#FLAGS=-std=c++17 -I${EIGENPATH}  -llapacke -llapack -g -march=native -fopenmp -O3
+
 ### INTEL MKL
 #OMPROOT=/opt/intel/compilers_and_libraries_2019.2.187/linux/compiler/lib
 #LIBIOMP=/opt/intel/compilers_and_libraries_2019.2.187/linux/compiler/lib/intel64/libiomp5.a
