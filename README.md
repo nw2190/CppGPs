@@ -16,8 +16,27 @@ Implementation of Numerical Gaussian Processes in C++
 
 ## Gaussian Process Regression
 
+### Compiling and Running the Code
+The `main.cpp` file provides an example use of the CppGP code for Gaussian process regression.  After specifying the correct path to the Eigen header files by editing the `EIGENPATH` variable in the `makefile`, the example code can be compiled and run as follows:
+```console
+user@host $ make all
+g++ -c -Wall  -std=c++17 -I/usr/include/eigen3 -g -march=native -fopenmp -O3 main.cpp -o main.o
+g++ -c -Wall  -std=c++17 -I/usr/include/eigen3 -g -march=native -fopenmp -O3 GPs.cpp -o GPs.o
+g++ -std=c++17 -I/usr/include/eigen3 -g -march=native -fopenmp -O3 -o Run main.cpp GPs.cpp
+
+user@host $ ./Run
+
+Computation Time: 3.47298 s
+
+Optimized Hyperparameters:
+0.0345955  (Noise = 0.33991)
+
+NLML:  1039.64
+
+```
+
 ### Defining the Target Function and Training Data
-The `main.cpp` file provides an example use of the CppGP code for Gaussian process regression.  The `targetFunc` function is used to define artificial training data for the regression task:
+The `targetFunc` function defined at the beginning of the `main.cpp` file is used to generate artificial training data for the regression task:
 ```cpp
 // Specify the target function for Gaussian process regression
 double targetFunc(double x)
