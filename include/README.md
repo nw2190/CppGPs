@@ -6,4 +6,4 @@ The CppOptimizationLibrary can be downloaded from the GitHub repository [PatWie/
 user@host $ git clone git@github.com:PatWie/CppNumericalSolvers.git
 ```
 
-The main repository directory `cppoptlib` should then be placed here (i.e. `include/cppoptlib`) before compiling the CppGPs code.
+The `cppoptlib` directory should then be placed here (i.e. `include/cppoptlib`) before compiling the CppGPs code.
