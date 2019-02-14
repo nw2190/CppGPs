@@ -14,7 +14,6 @@ Implementation of Numerical Gaussian Processes in C++
 
 
 
-
 ## Gaussian Process Regression
 
 ### Defining the Target Function and Training Data
@@ -91,7 +90,7 @@ The results of the CppGP code and SciKit Learn `GaussianProcessRegressor` class 
 
 
 
-## Profiling
+## Profiling the CppGPs Implementation
 
 ### Requirements
 * [`valgrind`](http://valgrind.org/docs/manual/quick-start.html) - debugging/profiling tool suite
