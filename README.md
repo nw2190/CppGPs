@@ -138,6 +138,6 @@ __Note:__ The `-s` flag can also be removed from the `gprof2dot` call to show pa
 ## References
 __Gaussian Processes for Machine Learning__ is an extremely useful reference written by Carl Rasmussen and Christopher Williams; the book has also been made freely available on the [book webpage](http://www.gaussianprocess.org/gpml/).
 
-__CppOptimizationLibrary__ is an extensive header-only library written by Patrick Wieschollek with C++ implementations for a diverse collection of optimization algorithms.
+__CppOptimizationLibrary__ is an extensive header-only library written by Patrick Wieschollek with C++ implementations for a diverse collection of optimization algorithms; the library is availble in the GitHub repository [PatWie/CppNumericalSolvers](https://github.com/PatWie/CppNumericalSolvers).
 
 __SciKit Learn__ provides a [Gaussian Process](https://scikit-learn.org/stable/modules/gaussian_process.html) Python module with an extensive collection of covariance kernels and options.
