@@ -17,7 +17,12 @@ Implementation of Numerical Gaussian Processes in C++
 ## Gaussian Process Regression
 
 ### Compiling and Running the Code
-The `main.cpp` file provides an example use of the CppGP code for Gaussian process regression.  After specifying the correct path to the Eigen header files by editing the `EIGENPATH` variable in the `makefile`, and downloading the `CppOptimizationLibrary` code as instructed in the `include/README.md` file, the example code can be compiled and run as follows:
+The `main.cpp` file provides an example use of the CppGP code for Gaussian process regression.  Before compilation, the following steps must be carried out:
+
+* Specify the path to the Eigen header files by editing the `EIGENPATH` variable in `makefile`
+* Download the `CppOptimizationLibrary` code as instructed in the `include/README.md` file
+
+Once these steps are completed, the example code can be compiled and run as follows:
 ```console
 user@host $ make all
 g++ -c -Wall  -std=c++17 -I/usr/include/eigen3 -g -march=native -fopenmp -O3 main.cpp -o main.o
