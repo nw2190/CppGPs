@@ -57,8 +57,8 @@ int main(int argc, char const *argv[])
   GaussianProcess model;
 
   // Specify observation data count
-  //int obsCount = 1000;
-  int obsCount = 500;
+  int obsCount = 1000;
+  //int obsCount = 500;
   //int obsCount = 250;  
   //int obsCount = 10;
 

@@ -98,12 +98,14 @@ std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params
   auto n = static_cast<int>(K.rows());
   
   // Define lambda function to create unary operator (by clamping kernelParams argument)      
-  auto lambda = [=,&params](double d)->double { return evalDistKernel(d, params, 0); };
+  //auto lambda = [=,&params](double d)->double { return evalDistKernel(d, params, 0); };
 
-  double diagVal = 1.0;
+  //double diagVal = 1.0;
   //Matrix Kv = Dv.unaryExpr(lambda);
-  Kv = Dv.unaryExpr(lambda);
-  squareForm(K, Kv, n, diagVal);
+  //Kv = Dv.unaryExpr(lambda);
+  Kv.noalias() = ( (-0.5 / (params(0)*params(0))) * Dv ).array().exp().matrix();
+  //squareForm(K, Kv, n, diagVal);
+  squareForm(K, Kv, n, 1.0);
 
   // Original formulation:
   //Matrix D;
@@ -116,7 +118,7 @@ std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params
     {
       //Matrix dK_i(n,n);
       //Matrix dK_iv = ( Dv.array() * (1/std::pow(params(0),2)) * Kv.array() ).matrix();
-      dK_iv = ( Dv.array() * (1/std::pow(params(0),2)) * Kv.array() ).matrix();
+      dK_iv.noalias() = 1/std::pow(params(0),2) * ( Dv.array() * Kv.array() ).matrix();
       squareForm(dK_i, dK_iv, n); // Note: diagVal = 0.0
 
       // Original formulation:
