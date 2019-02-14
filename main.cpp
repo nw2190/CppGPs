@@ -22,8 +22,6 @@
 double targetFunc(double x)
 {
   double oscillation = 30.0;
-  //double oscillation = 20.0;
-  //double oscillation = 10.0;
   return std::sin(oscillation*(x-0.1))*(0.5-(x-0.1))*15.0;
 }
 
