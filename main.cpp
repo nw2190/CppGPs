@@ -1,6 +1,8 @@
 // main.cpp -- example use of CppGPs for Gaussian process regression
 
+//
 // Eigen macros for using externel routines (may need to be moved to header file)
+// ( see https://eigen.tuxfamily.org/dox/TopicUsingBlasLapack.html ) 
 //#define EIGEN_USE_BLAS            // Must also link to BLAS library
 //#define EIGEN_USE_LAPACKE_STRICT  // Must also link to LAPACKE library
 //#define EIGEN_USE_MKL_ALL         // Must also link to Intel MKL library
