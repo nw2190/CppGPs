@@ -126,5 +126,5 @@ callgrind*
 perf*
 BAK*
 
-#include/cppoptlib
-#include/cppoptlib/*
+include/cppoptlib
+include/cppoptlib/*
