@@ -103,7 +103,7 @@ The artificial observation data and corresponding predictions/samples are saved 
 
 
 <p align="center">
-  <img width="90%" src="utils/example_plot.png" style="margin: auto;">
+  <img width="90%" alt="Example regression plot" src="utils/example_plot.png" style="margin: auto;">
 </p>
 
 
@@ -134,12 +134,18 @@ __Note:__ This will take _much_ more time to run than the standard execution tim
 A graph visualization of the node-wise executation times in the program can then be created via:
 ```
 perf record -g -- ./Run
-perf script | c++filt | gprof2dot -s -n 5.0 -f perf | dot -Tpng -o utils/output.png
+perf script | c++filt | gprof2dot -s -n 5.0 -f perf | dot -Tpng -o utils/profilier_output.png
 ```
 [//]: # (COMMENT: perf script | c++filt | python /usr/lib/python3.7/site-packages/gprof2dot.py -f perf | dot -Tpng -o output.png)
 
 
 __Note:__ The `-s` flag can also be removed from the `gprof2dot` call to show parameter types.  The `-n` flag is used to specify the percentage threshold for ommitting nodes.
+
+
+<p align="center">
+  <img width="90%" alt="Example profilier graph" src="utils/profilier_output.png" style="margin: auto;">
+</p>
+
 
 
 ## References
