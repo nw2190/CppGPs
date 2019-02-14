@@ -1,4 +1,4 @@
-# CppGPs
+# CppGPs - C++ Gaussian Process Library
 Implementation of Numerical Gaussian Processes in C++
 
 ## Dependencies
