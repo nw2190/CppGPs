@@ -128,3 +128,5 @@ BAK*
 
 include/cppoptlib
 include/cppoptlib/*
+#TEST_CODE
+#TEST_CODE/*
