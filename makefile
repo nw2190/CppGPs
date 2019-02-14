@@ -21,8 +21,9 @@ FLAGS=-std=c++17 -g -march=native -fopenmp -O3
 
 # 
 CFLAGS=-c -Wall 
-HEADERS=GPs.h minimize.h utils.h
-SOURCES=main.cpp GPs.cpp ./utils/minimize.cpp #utils.cpp
+HEADERS=GPs.h #minimize.h utils.h
+#SOURCES=main.cpp GPs.cpp ./utils/minimize.cpp #utils.cpp
+SOURCES=main.cpp GPs.cpp 
 OBJECTS=$(SOURCES:.cpp=.o)
 RUNFILE=Run
 
@@ -37,8 +38,8 @@ main.o: main.cpp $(HEADER)
 GPs.o: GPs.cpp $(HEADER)
 	$(CXX) $(CFLAGS) $(FLAGS) $< -o $@
 
-minimize.o: ./utils/minimize.cpp $(HEADER)
-	$(CXX) $(CFLAGS) $(FLAGS) $< -o $@
+#minimize.o: ./utils/minimize.cpp $(HEADER)
+#	$(CXX) $(CFLAGS) $(FLAGS) $< -o $@
 
 #utils.o: utils.cpp $(HEADER)
 #	$(CXX) $(CFLAGS) $(FLAGS) $< -o $@

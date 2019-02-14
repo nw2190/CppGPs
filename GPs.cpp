@@ -18,38 +18,6 @@
 using Matrix = GP::Matrix;
 using Vector = GP::Vector;
 
-// Define function for retrieving time from chrono
-float GP::getTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end)
-{
-  return static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count() / 1000000.0);
-};
-
-
-// Define kernel function for RBF
-double GP::RBF::evalKernel(Matrix & x, Matrix & y, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
-    case 1: return (x-y).squaredNorm() / std::pow(params(0),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-};
-
-// Define distance kernel function for RBF
-//
-// REVISION:  Optimize w.r.t. theta = log(l) for stability.
-//                 ==> .../ l^2  instead of .../ l^3
-double GP::RBF::evalDistKernel(double d, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
-    case 1: return d / std::pow(params(0),2) * std::exp( -d / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-};
-
 
 // Compute pairwise distance between lists of points
 void GP::pdist(Matrix & Dv, Matrix & X1, Matrix & X2)
@@ -71,39 +39,19 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 {
 
   D.resize(n,n);
-  /*
-  // POTENTIAL PARALLEL IMPLEMENTATION; SPEED-UP APPEARS NEGLIGIBLE
-  //int k;
-  //int shift;
-  int i;
-  int j;
-  //#pragma omp parallel for private(i,j,k,shift) shared(D,Dv,n)
-#pragma omp parallel for private(i,j) shared(D,Dv,n)
-  for ( i = 0 ; i<n-1; i++ )
-    {
-      for ( j = i+1 ; j<n ; j++ )
-        {
-          //shift = i+1;
-          //k = static_cast<int>(i*n - (i*(i+1))/2 + j - shift);
-          //D(i,j) = D(j,i) = Dv( k ,0);
-          D(i,j) = D(j,i) = Dv( static_cast<int>(i*n - (i*(i+1))/2 + j - i -1) ,0);
-        }
-    }
-  */
-  
-  ///*
+
   int k = 0;
   for ( auto i : boost::irange(0,n-1) )
     {
       for ( auto j : boost::irange(i+1,n) )
         D(i,j) = D(j,i) = Dv(k++,0);
     }
-  //*/
 
   D.diagonal() = diagVal * Eigen::MatrixXd::Ones(n,1);
 }
 
-// Compute cross covariance between two input vectors using kernel parameters p
+
+// Compute covariance matrix (and gradients) from a vector of squared pairwise distances Dv
 std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, double jitter, bool evalGrad)
 {
   auto n = static_cast<int>(K.rows());
@@ -135,7 +83,7 @@ std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params
 };
 
 
-
+// Compute cross covariance between two input vectors using kernel parameters params
 void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params)
 {
   // Get matrix input observation count
@@ -156,40 +104,6 @@ void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & par
 void GP::GaussianProcess::computeDistMat()
 {
   pdist(distMatrix, obsX, obsX);
-}
-
-// Evaluate NLML [public interface]
-double GP::GaussianProcess::computeNLML(const Vector & p, double noise)
-{
-  // Compute log-hyperparameters
-  Vector logparams(augParamCount);
-
-  if ( !fixedNoise )
-    {
-      logparams(0) = std::log(noise);
-      for ( auto i : boost::irange(1,augParamCount) )
-        logparams(i) = std::log(p(i-1));
-    }
-  else
-    {
-      logparams = logparams.array().log().matrix();
-    }
-
-  // Evaluate NLML using log-hyperparameters
-  return evalNLML(logparams);
-}
-
-// Evaluate NLML with default noise level [public interface]
-double GP::GaussianProcess::computeNLML(const Vector & p)
-{
-  return computeNLML(p, noiseLevel);
-}
-
-// Evaluate NLML with default noise level [public interface]
-double GP::GaussianProcess::computeNLML()
-{
-  auto params = (*kernel).getParams();
-  return computeNLML(params, noiseLevel);
 }
 
 
@@ -504,6 +418,98 @@ Matrix GP::GaussianProcess::getSamples(int count)
   
   return samples;
 }
+
+
+// Evaluate NLML [public interface]
+double GP::GaussianProcess::computeNLML(const Vector & p, double noise)
+{
+  // Compute log-hyperparameters
+  Vector logparams(augParamCount);
+
+  if ( !fixedNoise )
+    {
+      logparams(0) = std::log(noise);
+      for ( auto i : boost::irange(1,augParamCount) )
+        logparams(i) = std::log(p(i-1));
+    }
+  else
+    {
+      logparams = logparams.array().log().matrix();
+    }
+
+  // Evaluate NLML using log-hyperparameters
+  return evalNLML(logparams);
+}
+
+// Evaluate NLML with default noise level [public interface]
+double GP::GaussianProcess::computeNLML(const Vector & p)
+{
+  return computeNLML(p, noiseLevel);
+}
+
+// Evaluate NLML with default noise level [public interface]
+double GP::GaussianProcess::computeNLML()
+{
+  auto params = (*kernel).getParams();
+  return computeNLML(params, noiseLevel);
+}
+
+
+// Define function for retrieving time from chrono
+float GP::getTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end)
+{
+  return static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count() / 1000000.0);
+};
+
+
+// Define kernel function for RBF
+double GP::RBF::evalKernel(Matrix & x, Matrix & y, Vector & params, int n)
+{
+  switch (n)
+    {
+    case 0: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
+    case 1: return (x-y).squaredNorm() / std::pow(params(0),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
+    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
+    }
+};
+
+// Define distance kernel function for RBF
+//
+// REVISION:  Optimize w.r.t. theta = log(l) for stability  ==>   / l^2  instead of  / l^3
+//
+double GP::RBF::evalDistKernel(double d, Vector & params, int n)
+{
+  switch (n)
+    {
+    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
+    case 1: return d / std::pow(params(0),2) * std::exp( -d / (2.0*std::pow(params(0),2)));
+    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
+    }
+};
+
+
+
+
+/*
+// POTENTIAL PARALLEL IMPLEMENTATION OF SQUARE FORM; SPEED-UP APPEARS NEGLIGIBLE
+// Re-assemble pairwise distances into a dense matrix
+void GP::squareFormParallel(Matrix & D, Matrix & Dv, int n, double diagVal)
+{
+
+  D.resize(n,n);
+  int i;
+  int j;
+#pragma omp parallel for private(i,j) shared(D,Dv,n)
+  for ( i = 0 ; i<n-1; i++ )
+    {
+      for ( j = i+1 ; j<n ; j++ )
+        {
+          D(i,j) = D(j,i) = Dv( static_cast<int>(i*n - (i*(i+1))/2 + j - i -1) ,0);
+        }
+    }
+  D.diagonal() = diagVal * Eigen::MatrixXd::Ones(n,1);
+}
+*/
 
 
 
