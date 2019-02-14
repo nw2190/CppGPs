@@ -142,10 +142,14 @@ perf script | c++filt | gprof2dot -s -n 5.25 -f perf | dot -Tpng -o utils/profil
 __Note:__ The `-s` flag can also be removed from the `gprof2dot` call to show parameter types.  The `-n` flag is used to specify the percentage threshold for ommitting nodes.
 
 
+### Example Profilier Graph
+An example graph generated using the procedures outlined above is provided below:
+
 <p align="center">
   <img width="90%" alt="Example profilier graph" src="utils/profilier_output.png" style="margin: auto;">
 </p>
 
+As can be seen from the figure, the majority of the computational demand of the CppGPs implementation results from the  `Eigen::LLT::solveInPlace` method.  This corresponds to the term `cholesky.solve(Matrix::Identity(n,n))` in the `evalNLML()` function definition, which is used to compute the gradients of the NLML with respect to the hyperparameters.  A preliminary parallelized implementation has been included in the comments, however this naive attempt at concurency currently results in even slower evaluation times (but achieves close to 100% CPU usage at least...).
 
 
 ## References
