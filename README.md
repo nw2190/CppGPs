@@ -7,9 +7,10 @@ Implementation of Numerical Gaussian Processes in C++
 * [CppOptLib](https://github.com/PatWie/CppNumericalSolvers) - A header-only optimization library with a C++ L-BFGS implementation
 
 ## Optional Dependencies for Plotting / SciKit Learn Comparison
-* [NumPy](http://www.numpy.org/)* - Scientific computing package for Python
-* [MatPlotLib](https://matplotlib.org/)* - Python plotting library
-* [SciKit Learn](https://scikit-learn.org/stable/)* - Data analysis library for Python
+* [NumPy](http://www.numpy.org/) - Scientific computing package for Python
+* [csv](https://docs.python.org/3/library/csv.html) - Python module for working with comma separated value (CSV) files
+* [MatPlotLib](https://matplotlib.org/) - Python plotting library
+* [SciKit Learn](https://scikit-learn.org/stable/) - Data analysis library for Python
 
 
 
