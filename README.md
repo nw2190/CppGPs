@@ -103,7 +103,7 @@ The artificial observation data and corresponding predictions/samples are saved 
 
 
 <p align="center">
-  <img width="250" src="utils/example_plot.png" style="margin: auto;">
+  <img width="90%" src="utils/example_plot.png" style="margin: auto;">
 </p>
 
 
