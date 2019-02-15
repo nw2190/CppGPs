@@ -104,7 +104,7 @@ model.setPred(testMesh);
 model.predict();
 Matrix pmean = model.getPredMean();
 Matrix pvar = model.getPredVar();
-Matrix pstd = (pvar.array().sqrt()).matrix();
+Matrix pstd = pvar.array().sqrt().matrix();
 
 // Get sample paths from the posterior distribution of the model
 int sampleCount = 25;
