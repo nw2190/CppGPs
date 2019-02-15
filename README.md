@@ -117,7 +117,7 @@ The artificial observation data and corresponding predictions/samples are saved 
 </p>
 
 
-For the two dimensional case (i.e. when `inputDim=2` in the `main.cpp` file), an additional figure illustrating the predictive uncertainty of the model is provided; this plot corresponds to a slice of the predictive mean, along with the plus/minus one, two, and three standard deviations and associated training data points:
+For the two dimensional case (i.e. when `inputDim=2` in the `main.cpp` file), an additional figure illustrating the predictive uncertainty of the model is provided; this plot corresponds to a slice of the predictive mean, transparent standard deviation bounds, and observation data points used for training:
 
 <p align="center">
   <img width="90%" alt="Example plot of the predictive uncertainty" src="utils/predictive_uncertainty.png" style="margin: auto;">
