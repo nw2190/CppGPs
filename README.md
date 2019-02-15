@@ -49,10 +49,11 @@ user@host $ LD_PRELOAD=/usr/lib/libtcmalloc.so.4 ./Run
 The `targetFunc` function defined at the beginning of the `main.cpp` file is used to generate artificial training data for the regression task:
 ```cpp
 // Specify the target function for Gaussian process regression
-double targetFunc(double x)
+double targetFunc(Eigen::MatrixXd X)
 {
   double oscillation = 30.0;
-  return std::sin(oscillation*(x-0.1))*(0.5-(x-0.1))*15.0;
+  double xshifted = 0.5*(X(0) + 1.0);
+  return std::sin(oscillation*(xshifted-0.1))*(0.5-(xshifted-0.1))*15.0;
 }
 ```
 The training data consists of a collection of input points `X` along with an associated collection of target values `y`.  This data should be formatted so that `y(i) = targetFunc(X.row(i))` (with an optional additive noise term).  A simple one-dimensional problem setup can be defined as follows:
