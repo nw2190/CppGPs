@@ -162,8 +162,11 @@ namespace GP {
     bool fixedNoise = false;
     double jitter = 1e-7;
     Matrix K;
+
+    // Store Cholsky decomposition
     Eigen::LLT<Matrix> cholesky;
 
+    // Hyperparameter bounds
     Vector lowerBounds;
     Vector upperBounds;
     bool fixedBounds = false;
@@ -189,16 +192,13 @@ namespace GP {
     //std::vector<Matrix> gradList;  // Need to find a way to avoid creating new gradList each time...
 
     // DEFINE TIMER VARIABLES
-    /*
+    ///*
     double time_computecov = 0.0;
     double time_cholesky_llt = 0.0;
     double time_NLML = 0.0;
     double time_term = 0.0;
     double time_grad = 0.0;
-    double time_paramsearch = 0.0;
-    double time_minimize = 0.0;
-    double time_final_chol = 0.0;
-    */
+    //*/
   };
 
   // Define linspace function for generating

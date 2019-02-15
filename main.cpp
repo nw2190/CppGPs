@@ -100,6 +100,7 @@ int main(int argc, char const *argv[])
   for ( auto i : boost::irange(0,obsCount) )
     y(i) = targetFunc(X.row(i)) + noise(i);
 
+
   
   //
   //   [ Construct Gaussian Process Model ]
