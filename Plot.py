@@ -115,9 +115,11 @@ def main():
         ### C++ IMPLEMENTATION
         plt.figure()    
         plt.plot(inVals, predMean, 'C0', linewidth=2.0)
+        alpha = 0.075
         for k in [1,2,3]:
             plt.fill_between(inVals, predMean-k*predStd, predMean+k*predStd, where=1>=0, facecolor="C0", alpha=alpha, interpolate=True)
         plt.plot(inVals, trueVals, 'C1', linewidth=1.0, linestyle="dashed")
+        alpha_scatter = 0.5
         plt.scatter(obsX, obsY, alpha=alpha_scatter)
         for i in range(0,samples.shape[0]):
             plt.plot(inVals, samples[i,:], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
