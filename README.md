@@ -2,9 +2,9 @@
 Implementation of Numerical Gaussian Processes in C++
 
 ## Dependencies
-* [Eigen](https://eigen.tuxfamily.org/dox/GettingStarted.html) - High-level C++ library for linear algebra, matrix operations, and solvers
+* [Eigen](https://eigen.tuxfamily.org/dox/GettingStarted.html) - High-level C++ library for linear algebra, matrix operations, and solvers (version 3.3.7)
 * [GCC](https://gcc.gnu.org/) - GNU compiler collection; more specifically the GCC C++ compiler is recommended
-* [CppOptimizationLibrary](https://github.com/PatWie/CppNumericalSolvers) - A header-only optimization library with a C++ L-BFGS implementation
+* [CppOptimizationLibrary](https://github.com/PatWie/CppNumericalSolvers) - A header-only optimization library with an L-BFGS implementation in C++
 
 ### Optional Dependencies for Plotting / SciKit Learn Comparison
 * [NumPy](http://www.numpy.org/) - Scientific computing package for Python
