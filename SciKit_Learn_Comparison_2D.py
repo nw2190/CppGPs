@@ -289,30 +289,33 @@ def main():
         tri2_ax1 = tri_fig2.add_subplot(111, projection='3d')
 
 
-        ## Plot Predictive Mean
+        # Plot Predictive Mean
         linewidth = 0.1; alpha = 0.85
         tri2_ax1.plot_trisurf(plot_X_zoom,plot_Y_zoom, predMean_zoom, cmap=cmap, linewidth=linewidth, antialiased=True, alpha=alpha)
 
 
-        ## One Standard Deviation
+        # One Standard Deviation
         linewidth = 0.075; alpha = 0.2
         tri2_ax1.plot_trisurf(plot_X_zoom,plot_Y_zoom, predMean_plus_std, cmap=cmap, linewidth=linewidth, antialiased=True,alpha=alpha)
         tri2_ax1.plot_trisurf(plot_X_zoom,plot_Y_zoom, predMean_minus_std, cmap=cmap, linewidth=linewidth,antialiased=True,alpha=alpha)
 
-        ## Two Standard Deviations
+        # Two Standard Deviations
         linewidth = 0.05; alpha = 0.1
         tri2_ax1.plot_trisurf(plot_X_zoom,plot_Y_zoom, predMean_plus_std2, cmap=cmap, linewidth=linewidth,antialiased=True,alpha=alpha)
         tri2_ax1.plot_trisurf(plot_X_zoom,plot_Y_zoom, predMean_minus_std2, cmap=cmap, linewidth=linewidth,antialiased=True,alpha=alpha)
 
-        ## Three Standard Deviations
+        # Three Standard Deviations
         linewidth = 0.01; alpha = 0.01
         tri2_ax1.plot_trisurf(plot_X_zoom,plot_Y_zoom, predMean_plus_std3, cmap=cmap, linewidth=linewidth,antialiased=True,alpha=alpha)
         tri2_ax1.plot_trisurf(plot_X_zoom,plot_Y_zoom, predMean_minus_std3, cmap=cmap, linewidth=linewidth,antialiased=True,alpha=alpha)
 
-        ## Scatter plot of training observations
+        # Scatter plot of training observations
         alpha = 0.4
         tri2_ax1.scatter(obsX_x_zoom, obsX_y_zoom, obsY_zoom, c='k', marker='o', s=15.0, alpha=alpha)
 
+        # Add title to plot
+        plt.suptitle("CppGPs Predictive Uncertainty", fontsize=24)
+        
         # Remove axes from plot
         remove_axes(tri2_ax1)
 

@@ -213,11 +213,12 @@ double GP::GaussianProcess::evalNLML(const Vector & p)
 
 
 // Define function for uniform sampling
-Matrix GP::sampleUnif(double a, double b, int N)
+Matrix GP::sampleUnif(double a, double b, int N, int dim)
 {
   //return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
-  return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1) ) + a*Eigen::MatrixXd::Ones(N,1);
+  return (b-a)*(Eigen::MatrixXd::Random(N,dim) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,dim) ) + a*Eigen::MatrixXd::Ones(N,dim);
 }
+
 
 // Define function for uniform sampling [Vectors]
 Vector GP::sampleUnifVector(Vector lbs, Vector ubs)
@@ -229,6 +230,52 @@ Vector GP::sampleUnifVector(Vector lbs, Vector ubs)
   return sampleVector;
 }
 
+// Define function for sampling from standard normal distribution
+Matrix GP::sampleNormal(int N)
+{
+  // Note: Boost random is currently throwing deprecated header warnings...
+  //boost::random::mt19937 rng;
+  //boost::random::normal_distribution<> normalDist;
+  std::default_random_engine rng;
+  std::normal_distribution<double> normalDist(0.0,1.0);
+  Matrix sampleVals(N,1);
+  for ( auto i : boost::irange(0,N) )
+    sampleVals(i) = normalDist(rng);
+  return sampleVals;
+}
+
+
+// Generate equally spaced points on an interval or square region
+Matrix GP::linspace(double a, double b, int N, int dim)
+{
+
+  Matrix linspaceVals;
+  if ( dim == 1 )
+    {
+      linspaceVals.resize(N,1);
+      linspaceVals = Eigen::Array<double, Eigen::Dynamic, 1>::LinSpaced(N, a, b);
+    }
+  else if ( dim == 2 )
+    {
+      linspaceVals.resize(N*N,2);
+      Matrix linspaceVals1D = Eigen::Array<double, Eigen::Dynamic, 1>::LinSpaced(N, a, b);
+      int k = 0;
+      for ( auto i : boost::irange(0,N) )
+        {
+          for ( auto j : boost::irange(0,N) )
+            {
+              linspaceVals(k,0) = linspaceVals1D(i);
+              linspaceVals(k,1) = linspaceVals1D(j);
+              k++;
+            }
+        }
+    }
+  else
+      std::cout << "[*] GP::linspace has not been implemented for dim > 2\n";
+  
+  return linspaceVals;
+}
+
 
 // Define utility function for formatting hyperparameter bounds
 void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCount)
@@ -237,7 +284,7 @@ void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCo
   ubs.resize(augParamCount);
 
   double defaultLowerBound = 0.00001;
-  double defaultUpperBound = 5.0;
+  double defaultUpperBound = 10.0;
   
   if ( fixedBounds )
     {
@@ -307,10 +354,20 @@ void GP::GaussianProcess::fitModel()
   parseBounds(lbs, ubs, augParamCount);
 
   Vector optParams = Eigen::MatrixXd::Zero(augParamCount,1);
-
+  
   this->setLowerBound(lbs);
   this->setUpperBound(ubs);
   cppoptlib::LbfgsbSolver<GaussianProcess> solver;
+
+  // Specify stopping criteria
+  cppoptlib::Criteria<double> crit = cppoptlib::Criteria<double>::defaults();
+  //crit.iterations = 5000;
+  //crit.gradNorm = 10.0;   //!< Minimum norm of gradient vector
+  //crit.xDelta = 0;      //!< Minimum change in parameter vector
+  //crit.fDelta = 0;      //!< Minimum change in cost function
+  //crit.condition = 0;
+  solver.setStopCriteria(crit);
+
   solver.minimize(*this, optParams);
 
   // ASSUME OPTIMIZATION OVER LOG VALUES
@@ -363,7 +420,7 @@ void GP::GaussianProcess::predict()
   // Get matrix input observation count
   auto n = static_cast<int>(obsX.rows());
   auto m = static_cast<int>(predX.rows());
-
+  
   // Get optimized kernel hyperparameters
   Vector params = (*kernel).getParams();
 

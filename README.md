@@ -113,7 +113,21 @@ The artificial observation data and corresponding predictions/samples are saved 
 
 
 <p align="center">
-  <img width="90%" alt="Example regression plot" src="utils/example_plot.png" style="margin: auto;">
+  <img width="90%" alt="Example regression plot in one dimension" src="utils/1D_example.png" style="margin: auto;">
+</p>
+
+
+After setting `inputDim=2` in the `main.cpp` file, similar plots can be obtained for the two-dimesnional case:
+
+
+<p align="center">
+  <img width="90%" alt="Example regression plot in two dimensions" src="utils/2D_Comparison.png" style="margin: auto;">
+</p>
+
+In addition to the predictive means, a separate figure illustrating the predictive uncertainty is provided:
+
+<p align="center">
+  <img width="90%" alt="Example plot of the predictive uncertainty" src="utils/predictive_uncertainty.png" style="margin: auto;">
 </p>
 
 
