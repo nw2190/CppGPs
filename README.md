@@ -117,12 +117,8 @@ The artificial observation data and corresponding predictions/samples are saved 
 </p>
 
 
-After setting `inputDim=2` in the `main.cpp` file, similar plots can be obtained for the two-dimesnional case:
+An additional plot is provided for the two dimensional case (i.e. when `inputDim=2` in the `main.cpp` file) illustrating the predictive uncertainty of the model; this plot corresponds to a slice of the predictive mean, along with the plus/minus one, two, and three standard deviations and associated training data points:
 
-
-<p align="center">
-  <img width="90%" alt="Example regression plot in two dimensions" src="utils/2D_Comparison.png" style="margin: auto;">
-</p>
 
 In addition to the predictive means, a separate figure illustrating the predictive uncertainty is provided:
 
@@ -138,6 +134,9 @@ In addition to the predictive means, a separate figure illustrating the predicti
 The results of the CppGP code and SciKit Learn `GaussianProcessRegressor` class can be compared using the `SciKit_Learn_Comparison.py` Python script.  This code provides the estimated kernel/noise parameters and negative log marginal likelihood (NLML) calculations in addition to plots of the CppGP and SciKit Learn results.
 
 
+<p align="center">
+  <img width="90%" alt="Example regression plot in two dimensions" src="utils/2D_Comparison.png" style="margin: auto;">
+</p>
 
 
 ## Profiling the CppGPs Implementation
