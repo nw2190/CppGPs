@@ -161,8 +161,8 @@ def main():
             plt.fill_between(inVals, mean-k*std, mean+k*std, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
         plt.plot(inVals, trueVals, 'C1', linewidth=2.0, linestyle="dashed")
         plt.scatter(obsX, obsY)
-        #for i in range(0,model_samples.shape[1]):
-        #    plt.plot(inVals, model_samples[:,i], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
+        for i in range(0,model_samples.shape[1]):
+            plt.plot(inVals, model_samples[:,i], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
         plt.suptitle("Scikit Learn Implementation")
 
 
@@ -173,8 +173,8 @@ def main():
             plt.fill_between(inVals, predMean-k*predStd, predMean+k*predStd, where=1>=0, facecolor="C0", alpha=alpha, interpolate=True)
         plt.plot(inVals, trueVals, 'C1', linewidth=2.0, linestyle="dashed")
         plt.scatter(obsX, obsY)
-        #for i in range(0,samples.shape[0]):
-        #    plt.plot(inVals, samples[i,:], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
+        for i in range(0,samples.shape[0]):
+            plt.plot(inVals, samples[i,:], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
         plt.suptitle("C++ Implementation")    
         plt.show()
 

@@ -206,11 +206,8 @@ namespace GP {
   //Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> linspace(T a, T b, int N)
   //{ return Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(N, a, b); }
 
-  // Define linspace function for generating
-  // equally spaced points on an square region
-  //Matrix linspaceSquare(double a, double b, int N);
+  // Define linspace function for generating equally spaced points 
   Matrix linspace(double a, double b, int N, int dim=1);
-    
   
 };
 

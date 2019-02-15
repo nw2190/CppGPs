@@ -26,16 +26,13 @@ double targetFunc(Eigen::MatrixXd X)
 
   if ( X.size() == 1 )
     {
-      //double pi = std::atan(1)*4;
-      //return std::sin(pi*X.squaredNorm());
       double oscillation = 30.0;
       double xshifted = 0.5*(X(0) + 1.0);
       return std::sin(oscillation*(xshifted-0.1))*(0.5-(xshifted-0.1))*15.0;
     }
   else
     {
-
-      double sigma = 0.2;
+      double sigma = 0.25;
       double pi = std::atan(1)*4;
       double radialTerm = std::pow(X.squaredNorm()/sigma,2);
       return 2.0 / (std::sqrt(pi*sigma) * std::pow(pi,1.0/4.0)) * (1.0 - radialTerm) * std::exp(-radialTerm);
@@ -58,7 +55,6 @@ int main(int argc, char const *argv[])
   using GP::linspace;
   using GP::sampleNormal;
   using GP::sampleUnif;
-  //using GP::sampleUnifSquare;
   using GP::RBF;
   
   // Used for timing code with chrono
@@ -77,20 +73,22 @@ int main(int argc, char const *argv[])
   //   [ Define Training Data ]
   //
 
-  // Specify observation data count
-  int obsCount = 1500;
-  //int obsCount = 1000;
-
   // Specify the input dimensions
   //int inputDim = 1;
   int inputDim = 2;
+
+  // Specify observation data count
+  int obsCount;
+    if ( inputDim == 1 )
+      obsCount = 200;
+    else
+      obsCount = 1000;
   
   // Specify observation noise level
   auto noiseLevel = 1.0;
 
   // Define random noise to add to target observations
-  //   NOTE: .noalias() is 100% necessary
-  //         when using  "std::default_random_engine"
+  // [ NOTE: .noalias() is 100% necessary with "std::default_random_engine" ]
   Matrix noise;
   noise.noalias() = sampleNormal(obsCount) * noiseLevel;
 
@@ -157,7 +155,11 @@ int main(int argc, char const *argv[])
   //
 
   // Define test mesh for GP model predictions
-  int predCount = 1000;
+  int predCount;
+  if ( inputDim == 1 )
+    predCount = 100;
+  else
+    predCount = 1000;
   //int predRes = static_cast<int>(std::sqrt(predCount));
   int predRes = static_cast<int>(std::pow(predCount,1.0/inputDim));
   //auto testMesh = linspace(0.0, 1.0, predCount);
