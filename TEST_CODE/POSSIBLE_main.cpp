@@ -19,35 +19,10 @@
 
 
 // Specify the target function for Gaussian process regression
-/*
 double targetFunc(double x)
 {
   double oscillation = 30.0;
   return std::sin(oscillation*(x-0.1))*(0.5-(x-0.1))*15.0;
-}
-*/
-
-// Define target function to be the Marr wavelet (a.k.a "Mexican Hat" wavelet)
-// ( see https://en.wikipedia.org/wiki/Mexican_hat_wavelet )
-double targetFunc(Eigen::MatrixXd X)
-{
-
-  if ( X.size() == 1 )
-    {
-      double pi = std::atan(1)*4;
-      return std::sin(pi*X.squaredNorm());
-      //double oscillation = 30.0;
-      //double xshifted = 0.5*(X(0) + 1.0);
-      //return std::sin(oscillation*(xshifted-0.1))*(0.5-(xshifted-0.1))*1.0;
-    }
-  else
-    {
-
-      double sigma = 0.2;
-      double pi = std::atan(1)*4;
-      double radialTerm = std::pow(X.squaredNorm()/sigma,2);
-      return 2.0 / (std::sqrt(pi*sigma) * std::pow(pi,1.0/4.0)) * (1.0 - radialTerm) * std::exp(-radialTerm);
-    }
 }
 
 
@@ -64,9 +39,7 @@ int main(int argc, char const *argv[])
   using std::endl;
   using GP::GaussianProcess;
   using GP::linspace;
-  using GP::sampleNormal;
   using GP::sampleUnif;
-  using GP::sampleUnifSquare;
   using GP::RBF;
   
   // Used for timing code with chrono
@@ -86,44 +59,28 @@ int main(int argc, char const *argv[])
   //
 
   // Specify observation data count
-  int obsCount = 1500;
-  //int obsCount = 1000;
+  int obsCount = 1000;
 
-  // Specify the input dimensions
-  //int inputDim = 1;
-  int inputDim = 2;
-  
   // Specify observation noise level
-  //auto noiseLevel = 0.1;
-  //auto noiseLevel = 0.5;
-  auto noiseLevel = 0.5;
+  auto noiseLevel = 1.0;
 
   // Define random uniform noise to add to target observations
-  //auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
-  //auto noise = sampleNormal(obsCount) * noiseLevel;
-  Matrix noise;
-  noise.noalias() = sampleNormal(obsCount) * noiseLevel;
-
-  //for ( auto i : boost::irange(0,10) )
-  //  cout << noise(i) << endl;
+  auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
 
   // Define observations by sampling random uniform distribution
-  //Matrix X = sampleUnif(0.0, 1.0, obsCount);
-  //Matrix X = sampleUnifSquare(-1.0, 1.0, obsCount, inputDim);
-  //Matrix X = sampleUnif(-1.0, 1.0, obsCount, inputDim);
-  Matrix X = sampleUnifSquare(-1.0, 1.0, inputDim, obsCount);
+  Matrix X = sampleUnif(0.0, 1.0, obsCount);
   Matrix y;  y.resize(obsCount, 1);
-  
+
   // Define target observations 'y' by applying 'targetFunc'
   // to the input observations 'X' and adding a noise vector
-  //y = X.unaryExpr(std::ptr_fun(targetFunc)) + noise;
-  for ( auto i : boost::irange(0,obsCount) )
-    y(i,0) = targetFunc(X.row(i)) + noise(i);
+  y = X.unaryExpr(std::ptr_fun(targetFunc)) + noise;
 
+
+  
   //
   //   [ Construct Gaussian Process Model ]
   //
-
+  
   // Initialize Gaussian process model
   GaussianProcess model;
   
@@ -173,15 +130,9 @@ int main(int argc, char const *argv[])
   //
 
   // Define test mesh for GP model predictions
-  int predCount = 1000;
-  //int predRes = static_cast<int>(std::sqrt(predCount));
-  int predRes = static_cast<int>(std::pow(predCount,1.0/inputDim));
-  //auto testMesh = linspace(0.0, 1.0, predCount);
-  auto testMesh = linspace(-1.0, 1.0, predRes, inputDim);
+  int predCount = 100;
+  auto testMesh = linspace(0.0, 1.0, predCount);
   model.setPred(testMesh);
-
-  // Reset predCount to account for rounding
-  predCount = std::pow(predRes,inputDim);
 
   // Compute predicted means and variances for the test points
   model.predict();
@@ -190,13 +141,10 @@ int main(int argc, char const *argv[])
   Matrix pstd = (pvar.array().sqrt()).matrix();
 
   // Get sample paths from the posterior distribution of the model
-  int sampleCount;
-  Matrix samples;
-  if ( inputDim == 1 )
-    {
-      sampleCount = 100;
-      samples = model.getSamples(sampleCount);
-    }
+  int sampleCount = 100;
+  Matrix samples = model.getSamples(sampleCount);
+
+
 
   //
   //   [ Save Results for Plotting ]
@@ -204,48 +152,29 @@ int main(int argc, char const *argv[])
   
   // Save true and predicted means/variances to file
   std::string outputFile = "predictions.csv";
-  //Matrix trueSoln = testMesh.unaryExpr(std::ptr_fun(targetFunc));
-
-  Matrix trueSoln(predCount,1);
-  for ( auto i : boost::irange(0,predCount) )
-    trueSoln(i,0) = targetFunc(testMesh.row(i));
-
+  Matrix trueSoln = testMesh.unaryExpr(std::ptr_fun(targetFunc));
   std::ofstream fout;
   fout.open(outputFile);
   for ( auto i : boost::irange(0,predCount) )
-    {
-      for ( auto j : boost::irange(0,inputDim) )
-        fout << testMesh(i,j) << ",";
-      
-      fout << trueSoln(i) << "," << pmean(i) << "," << pstd(i) << "\n";
-    }
+      fout << testMesh(i) << "," << trueSoln(i) << "," << pmean(i) << "," << pstd(i) << "\n";
   fout.close();
 
   // Save observations to file
   std::string outputObsFile = "observations.csv";
   fout.open(outputObsFile);
   for ( auto i : boost::irange(0,obsCount) )
+      fout << X(i) << "," << y(i) << "\n";
+  fout.close();
+  
+  // Save samples to file
+  std::string outputSampleFile = "samples.csv";
+  fout.open(outputSampleFile);
+  for ( auto j : boost::irange(0,sampleCount) )
     {
-      for ( auto j : boost::irange(0,inputDim) )
-        fout << X(i,j) << ",";
-      
-      fout << y(i) << "\n";
+      for ( auto i : boost::irange(0,predCount) )
+          fout << samples(i,j) << ((i<predCount-1) ? "," : "\n");
     }
   fout.close();
-
-
-  if ( inputDim == 1 )
-    {
-      // Save samples to file
-      std::string outputSampleFile = "samples.csv";
-      fout.open(outputSampleFile);
-      for ( auto j : boost::irange(0,sampleCount) )
-        {
-          for ( auto i : boost::irange(0,predCount) )
-            fout << samples(i,j) << ((i<predCount-1) ? "," : "\n");
-        }
-      fout.close();
-    }
 
   
   return 0;

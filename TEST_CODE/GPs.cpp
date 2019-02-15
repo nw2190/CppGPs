@@ -213,10 +213,10 @@ double GP::GaussianProcess::evalNLML(const Vector & p)
 
 
 // Define function for uniform sampling
-Matrix GP::sampleUnif(double a, double b, int N)
+Matrix GP::sampleUnif(double a, double b, int N, int dim)
 {
   //return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
-  return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1) ) + a*Eigen::MatrixXd::Ones(N,1);
+  return (b-a)*(Eigen::MatrixXd::Random(N,dim) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,dim) ) + a*Eigen::MatrixXd::Ones(N,dim);
 }
 
 // Define function for uniform sampling on square region
@@ -243,29 +243,44 @@ Matrix GP::sampleNormal(int N)
   //boost::random::normal_distribution<> normalDist;
   std::default_random_engine rng;
   std::normal_distribution<double> normalDist(0.0,1.0);
-  Matrix samples(N,1);
+  Matrix sampleVals(N,1);
   for ( auto i : boost::irange(0,N) )
-    samples(i) = normalDist(rng);
-  return samples;
+    sampleVals(i) = normalDist(rng);
+  return sampleVals;
 }
 
-// Generate equally spaced points on square region
-Matrix GP::linspaceSquare(double a, double b, int N)
+
+// Generate equally spaced points on an interval or square region
+Matrix GP::linspace(double a, double b, int N, int dim)
 {
-  Matrix linspaceVals = Eigen::Array<double, Eigen::Dynamic, 1>::LinSpaced(N, a, b);
-  Matrix squareVals(N*N,2);
-  int k = 0;
-  for ( auto i : boost::irange(0,N) )
+
+  Matrix linspaceVals;
+  if ( dim == 1 )
     {
-      for ( auto j : boost::irange(0,N) )
+      linspaceVals.resize(N,1);
+      linspaceVals = Eigen::Array<double, Eigen::Dynamic, 1>::LinSpaced(N, a, b);
+    }
+  else if ( dim == 2 )
+    {
+      linspaceVals.resize(N*N,2);
+      Matrix linspaceVals1D = Eigen::Array<double, Eigen::Dynamic, 1>::LinSpaced(N, a, b);
+      int k = 0;
+      for ( auto i : boost::irange(0,N) )
         {
-          squareVals(k,0) = linspaceVals(i);
-          squareVals(k,1) = linspaceVals(j);
-          k++;
+          for ( auto j : boost::irange(0,N) )
+            {
+              linspaceVals(k,0) = linspaceVals1D(i);
+              linspaceVals(k,1) = linspaceVals1D(j);
+              k++;
+            }
         }
     }
-  return squareVals;
+  else
+      std::cout << "[*] GP::linspace has not been implemented for dim > 2\n";
+  
+  return linspaceVals;
 }
+
 
 // Define utility function for formatting hyperparameter bounds
 void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCount)
@@ -410,7 +425,7 @@ void GP::GaussianProcess::predict()
   // Get matrix input observation count
   auto n = static_cast<int>(obsX.rows());
   auto m = static_cast<int>(predX.rows());
-
+  
   // Get optimized kernel hyperparameters
   Vector params = (*kernel).getParams();
 
