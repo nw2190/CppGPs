@@ -31,12 +31,12 @@ g++ -std=c++17 -I/usr/include/eigen3 -g -march=native -fopenmp -O3 -o Run main.c
 
 user@host $ ./Run
 
-Computation Time: 3.47298 s
+Computation Time: 0.089068 s
 
 Optimized Hyperparameters:
-0.0345955  (Noise = 0.33991)
+0.066468  (Noise = 0.969875)
 
-NLML:  1039.64
+NLML:  469.561
 
 ```
 
