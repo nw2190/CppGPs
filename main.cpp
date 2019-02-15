@@ -100,7 +100,7 @@ int main(int argc, char const *argv[])
   // Define target observations 'y' by applying 'targetFunc'
   // to the input observations 'X' and adding a noise vector
   for ( auto i : boost::irange(0,obsCount) )
-    y(i,0) = targetFunc(X.row(i)) + noise(i);
+    y(i) = targetFunc(X.row(i)) + noise(i);
 
   
   //

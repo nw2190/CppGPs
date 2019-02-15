@@ -68,7 +68,7 @@ auto noiseLevel = 1.0;
 Matrix noise;
 noise.noalias() = sampleNormal(obsCount) * noiseLevel;
 for ( auto i : boost::irange(0,obsCount) )
-  y(i,0) = targetFunc(X.row(i)) + noise(i);
+  y(i) = targetFunc(X.row(i)) + noise(i);
 ```
 
 ### Specifying and Fitting the Gaussian Process Model
