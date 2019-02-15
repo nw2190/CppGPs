@@ -19,14 +19,6 @@
 
 
 // Specify the target function for Gaussian process regression
-/*
-double targetFunc(double x)
-{
-  double oscillation = 30.0;
-  return std::sin(oscillation*(x-0.1))*(0.5-(x-0.1))*15.0;
-}
-*/
-
 // Define target function to be the Marr wavelet (a.k.a "Mexican Hat" wavelet)
 // ( see https://en.wikipedia.org/wiki/Mexican_hat_wavelet )
 double targetFunc(Eigen::MatrixXd X)
@@ -34,11 +26,11 @@ double targetFunc(Eigen::MatrixXd X)
 
   if ( X.size() == 1 )
     {
-      double pi = std::atan(1)*4;
-      return std::sin(pi*X.squaredNorm());
-      //double oscillation = 30.0;
-      //double xshifted = 0.5*(X(0) + 1.0);
-      //return std::sin(oscillation*(xshifted-0.1))*(0.5-(xshifted-0.1))*1.0;
+      //double pi = std::atan(1)*4;
+      //return std::sin(pi*X.squaredNorm());
+      double oscillation = 30.0;
+      double xshifted = 0.5*(X(0) + 1.0);
+      return std::sin(oscillation*(xshifted-0.1))*(0.5-(xshifted-0.1))*15.0;
     }
   else
     {
@@ -66,7 +58,7 @@ int main(int argc, char const *argv[])
   using GP::linspace;
   using GP::sampleNormal;
   using GP::sampleUnif;
-  using GP::sampleUnifSquare;
+  //using GP::sampleUnifSquare;
   using GP::RBF;
   
   // Used for timing code with chrono
@@ -94,32 +86,24 @@ int main(int argc, char const *argv[])
   int inputDim = 2;
   
   // Specify observation noise level
-  //auto noiseLevel = 0.1;
-  //auto noiseLevel = 0.5;
-  auto noiseLevel = 0.5;
+  auto noiseLevel = 1.0;
 
-  // Define random uniform noise to add to target observations
-  //auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
-  //auto noise = sampleNormal(obsCount) * noiseLevel;
+  // Define random noise to add to target observations
+  //   NOTE: .noalias() is 100% necessary
+  //         when using  "std::default_random_engine"
   Matrix noise;
   noise.noalias() = sampleNormal(obsCount) * noiseLevel;
 
-  //for ( auto i : boost::irange(0,10) )
-  //  cout << noise(i) << endl;
-
   // Define observations by sampling random uniform distribution
-  //Matrix X = sampleUnif(0.0, 1.0, obsCount);
-  //Matrix X = sampleUnifSquare(-1.0, 1.0, obsCount, inputDim);
-  //Matrix X = sampleUnif(-1.0, 1.0, obsCount, inputDim);
-  Matrix X = sampleUnifSquare(-1.0, 1.0, inputDim, obsCount);
+  Matrix X = sampleUnif(-1.0, 1.0, obsCount, inputDim);
   Matrix y;  y.resize(obsCount, 1);
   
   // Define target observations 'y' by applying 'targetFunc'
   // to the input observations 'X' and adding a noise vector
-  //y = X.unaryExpr(std::ptr_fun(targetFunc)) + noise;
   for ( auto i : boost::irange(0,obsCount) )
     y(i,0) = targetFunc(X.row(i)) + noise(i);
 
+  
   //
   //   [ Construct Gaussian Process Model ]
   //

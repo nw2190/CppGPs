@@ -106,13 +106,6 @@ def main():
     Xtest = np.reshape(inVals, [-1, inputDim])
 
 
-    print("X.shape")
-    print(X.shape)
-
-    print("Y.shape")
-    print(Y.shape)
-
-    
     # Model parameters
     n_restarts = 0
     normalize_y = False

@@ -220,10 +220,10 @@ Matrix GP::sampleUnif(double a, double b, int N, int dim)
 }
 
 // Define function for uniform sampling on square region
-Matrix GP::sampleUnifSquare(double a, double b, int dim, int N)
-{
-  return (b-a)*(Eigen::MatrixXd::Random(N,dim) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,dim) ) + a*Eigen::MatrixXd::Ones(N,dim);
-}
+//Matrix GP::sampleUnifSquare(double a, double b, int dim, int N)
+//{
+//  return (b-a)*(Eigen::MatrixXd::Random(N,dim) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,dim) ) + a*Eigen::MatrixXd::Ones(N,dim);
+//}
 
 // Define function for uniform sampling [Vectors]
 Vector GP::sampleUnifVector(Vector lbs, Vector ubs)

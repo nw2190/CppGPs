@@ -32,7 +32,7 @@ namespace GP {
   // Define function for sampling uniform distribution on interval
   Matrix sampleUnif(double a=0.0, double b=1.0, int N=1, int dim=1);
   //Matrix sampleUnif(double a=0.0, double b=1.0, int N=1);
-  Matrix sampleUnifSquare(double a=0.0, double b=1.0, int dim=1, int N=1);
+  //Matrix sampleUnifSquare(double a=0.0, double b=1.0, int dim=1, int N=1);
   Vector sampleUnifVector(Vector lbs, Vector ubs);
   Matrix sampleNormal(int N=1);
   
