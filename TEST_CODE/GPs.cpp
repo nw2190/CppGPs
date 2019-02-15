@@ -235,6 +235,20 @@ Vector GP::sampleUnifVector(Vector lbs, Vector ubs)
   return sampleVector;
 }
 
+// Define function for sampling from standard normal distribution
+Matrix GP::sampleNormal(int N)
+{
+  // Note: Boost random is currently throwing deprecated header warnings...
+  //boost::random::mt19937 rng;
+  //boost::random::normal_distribution<> normalDist;
+  std::default_random_engine rng;
+  std::normal_distribution<double> normalDist(0.0,1.0);
+  Matrix samples(N,1);
+  for ( auto i : boost::irange(0,N) )
+    samples(i) = normalDist(rng);
+  return samples;
+}
+
 // Generate equally spaced points on square region
 Matrix GP::linspaceSquare(double a, double b, int N)
 {
@@ -330,10 +344,20 @@ void GP::GaussianProcess::fitModel()
   parseBounds(lbs, ubs, augParamCount);
 
   Vector optParams = Eigen::MatrixXd::Zero(augParamCount,1);
-
+  
   this->setLowerBound(lbs);
   this->setUpperBound(ubs);
   cppoptlib::LbfgsbSolver<GaussianProcess> solver;
+
+  // Specify stopping criteria
+  cppoptlib::Criteria<double> crit = cppoptlib::Criteria<double>::defaults();
+  //crit.iterations = 5000;
+  //crit.gradNorm = 10.0;   //!< Minimum norm of gradient vector
+  //crit.xDelta = 0;      //!< Minimum change in parameter vector
+  //crit.fDelta = 0;      //!< Minimum change in cost function
+  //crit.condition = 0;
+  solver.setStopCriteria(crit);
+
   solver.minimize(*this, optParams);
 
   // ASSUME OPTIMIZATION OVER LOG VALUES

@@ -26,10 +26,15 @@ double targetFunc(double x)
   return std::sin(oscillation*(x-0.1))*(0.5-(x-0.1))*15.0;
 }
 */
+
+// Define target function to be the Marr wavelet (a.k.a "Mexican Hat" wavelet)
+// ( see https://en.wikipedia.org/wiki/Mexican_hat_wavelet )
 double targetFunc(Eigen::MatrixXd X)
 {
-  double oscillation = 4.0;
-  return std::sin(oscillation*(X.squaredNorm()-0.1))*(0.5-(X.squaredNorm()-0.1))*15.0;
+  double sigma = 0.2;
+  double pi = std::atan(1)*4;
+  double radialTerm = std::pow(X.squaredNorm()/sigma,2);
+  return 2.0 / (std::sqrt(pi*sigma) * std::pow(pi,1.0/4.0)) * (1.0 - radialTerm) * std::exp(-radialTerm);
 }
 
 
@@ -47,6 +52,7 @@ int main(int argc, char const *argv[])
   using GP::GaussianProcess;
   using GP::linspace;
   using GP::linspaceSquare;
+  using GP::sampleNormal;
   using GP::sampleUnif;
   using GP::sampleUnifSquare;
   using GP::RBF;
@@ -68,16 +74,18 @@ int main(int argc, char const *argv[])
   //
 
   // Specify observation data count
-  int obsCount = 1000;
+  int obsCount = 1500;
 
   // Specify the input dimensions
   int inputDim = 2;
   
   // Specify observation noise level
-  auto noiseLevel = 0.1;
+  //auto noiseLevel = 0.1;
+  auto noiseLevel = 0.5;
 
   // Define random uniform noise to add to target observations
-  auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
+  //auto noise = Eigen::VectorXd::Random(obsCount) * noiseLevel;
+  auto noise = sampleNormal(obsCount) * noiseLevel;
 
   // Define observations by sampling random uniform distribution
   //Matrix X = sampleUnif(0.0, 1.0, obsCount);
