@@ -130,5 +130,5 @@ include/cppoptlib
 include/cppoptlib/*
 #TEST_CODE
 #TEST_CODE/*
-#TEST_CODE/cppoptlib
-#TEST_CODE/cppoptlib/*
+TEST_CODE/cppoptlib
+TEST_CODE/cppoptlib/*
