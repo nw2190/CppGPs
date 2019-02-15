@@ -65,8 +65,7 @@ Matrix y;  y.resize(obsCount, 1);
 Noise can be added to the training target data `y` to better assess the fit of the model's predictive variance.  The level of noise in the training data can be adjusted via the `noiseLevel` parameter and used to define the target data via:
 ```cpp
 auto noiseLevel = 1.0;
-Matrix noise;
-noise.noalias() = sampleNormal(obsCount) * noiseLevel;
+auto noise = sampleNormal(obsCount) * noiseLevel;
 for ( auto i : boost::irange(0,obsCount) )
   y(i) = targetFunc(X.row(i)) + noise(i);
 ```

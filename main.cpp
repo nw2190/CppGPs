@@ -89,9 +89,7 @@ int main(int argc, char const *argv[])
   auto noiseLevel = 1.0;
 
   // Define random noise to add to target observations
-  // [ NOTE: .noalias() is 100% necessary with "std::default_random_engine" ]
-  Matrix noise;
-  noise.noalias() = sampleNormal(obsCount) * noiseLevel;
+  auto noise = sampleNormal(obsCount) * noiseLevel;
 
   // Define observations by sampling random uniform distribution
   Matrix X = sampleUnif(-1.0, 1.0, obsCount, inputDim);

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <memory>
 #include <random>
+#include <limits>
 #include <boost/range/irange.hpp>
 #include <Eigen/Dense>
 #include "GPs.h"
@@ -94,6 +95,29 @@ void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & par
       K.col(j) = ((X1.rowwise() - X2.row(j)).rowwise().squaredNorm()).unaryExpr(lambda);          
     }
   
+};
+
+// Define kernel function for RBF
+double GP::RBF::evalKernel(Matrix & x, Matrix & y, Vector & params, int n)
+{
+  switch (n)
+    {
+    case 0: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
+    case 1: return (x-y).squaredNorm() / std::pow(params(0),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
+    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
+    }
+};
+
+// Define distance kernel function for RBF
+// [ Note: Optimize w.r.t. theta = log(l) for stability  ==>   / l^2  instead of  / l^3 ]
+double GP::RBF::evalDistKernel(double d, Vector & params, int n)
+{
+  switch (n)
+    {
+    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
+    case 1: return d / std::pow(params(0),2) * std::exp( -d / (2.0*std::pow(params(0),2)));
+    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
+    }
 };
 
 
@@ -209,71 +233,6 @@ double GP::GaussianProcess::evalNLML(const Vector & p)
 {
   Vector nullGrad(0);
   return evalNLML(p,nullGrad,false);
-}
-
-
-// Define function for uniform sampling
-Matrix GP::sampleUnif(double a, double b, int N, int dim)
-{
-  //return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
-  return (b-a)*(Eigen::MatrixXd::Random(N,dim) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,dim) ) + a*Eigen::MatrixXd::Ones(N,dim);
-}
-
-
-// Define function for uniform sampling [Vectors]
-Vector GP::sampleUnifVector(Vector lbs, Vector ubs)
-{
-  auto n = static_cast<int>(lbs.rows());
-
-  Vector sampleVector = ((ubs-lbs).array()*( 0.5*Eigen::MatrixXd::Random(n,1) + 0.5*Eigen::MatrixXd::Ones(n,1) ).array()).matrix() + (lbs.array()*Eigen::MatrixXd::Ones(n,1).array()).matrix();
-  
-  return sampleVector;
-}
-
-// Define function for sampling from standard normal distribution
-Matrix GP::sampleNormal(int N)
-{
-  // Note: Boost random is currently throwing deprecated header warnings...
-  //boost::random::mt19937 rng;
-  //boost::random::normal_distribution<> normalDist;
-  std::default_random_engine rng;
-  std::normal_distribution<double> normalDist(0.0,1.0);
-  Matrix sampleVals(N,1);
-  for ( auto i : boost::irange(0,N) )
-    sampleVals(i) = normalDist(rng);
-  return sampleVals;
-}
-
-
-// Generate equally spaced points on an interval or square region
-Matrix GP::linspace(double a, double b, int N, int dim)
-{
-
-  Matrix linspaceVals;
-  if ( dim == 1 )
-    {
-      linspaceVals.resize(N,1);
-      linspaceVals = Eigen::Array<double, Eigen::Dynamic, 1>::LinSpaced(N, a, b);
-    }
-  else if ( dim == 2 )
-    {
-      linspaceVals.resize(N*N,2);
-      Matrix linspaceVals1D = Eigen::Array<double, Eigen::Dynamic, 1>::LinSpaced(N, a, b);
-      int k = 0;
-      for ( auto i : boost::irange(0,N) )
-        {
-          for ( auto j : boost::irange(0,N) )
-            {
-              linspaceVals(k,0) = linspaceVals1D(i);
-              linspaceVals(k,1) = linspaceVals1D(j);
-              k++;
-            }
-        }
-    }
-  else
-      std::cout << "[*] GP::linspace has not been implemented for dim > 2\n";
-  
-  return linspaceVals;
 }
 
 
@@ -512,6 +471,103 @@ double GP::GaussianProcess::computeNLML()
 }
 
 
+
+// Define function for uniform sampling
+Matrix GP::sampleUnif(double a, double b, int N, int dim)
+{
+  //return (b-a)*(Eigen::MatrixXd::Random(N,1) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,1)) + a*Eigen::MatrixXd::Ones(N,1);
+  return (b-a)*(Eigen::MatrixXd::Random(N,dim) * 0.5 + 0.5*Eigen::MatrixXd::Ones(N,dim) ) + a*Eigen::MatrixXd::Ones(N,dim);
+}
+
+
+// Define function for uniform sampling [Vectors]
+Vector GP::sampleUnifVector(Vector lbs, Vector ubs)
+{
+  auto n = static_cast<int>(lbs.rows());
+
+  Vector sampleVector = ((ubs-lbs).array()*( 0.5*Eigen::MatrixXd::Random(n,1) + 0.5*Eigen::MatrixXd::Ones(n,1) ).array()).matrix() + (lbs.array()*Eigen::MatrixXd::Ones(n,1).array()).matrix();
+  
+  return sampleVector;
+}
+
+
+// Define function for sampling from standard normal distribution
+Matrix GP::sampleNormal(int N)
+{
+  // Note: Boost random is currently throwing deprecated header warnings...
+  //boost::random::mt19937 rng;
+  //boost::random::normal_distribution<> normalDist;
+
+  /*
+  // [ NOTE: .noalias() is 100% necessary with "std::default_random_engine" ]
+  std::default_random_engine rng;
+  std::normal_distribution<double> normalDist(0.0,1.0);
+  Matrix sampleVals(N,1);
+  for ( auto i : boost::irange(0,N) )
+    sampleVals(i) = normalDist(rng);
+  */
+
+  
+  //
+  //          Crude implementation of Box-Muller Transform
+  // ( see https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform )
+  //
+  static const double epsilon = std::numeric_limits<double>::min();
+  Matrix U1(N,1);
+  Matrix U2(N,1);
+
+  // Ensure log operand is not too small
+  double scaledLimit = 2.0*epsilon - 1.0;
+  do
+    {
+      U1 = Eigen::MatrixXd::Random(N,1);
+      U2 = Eigen::MatrixXd::Random(N,1);
+    }
+  while ( U1.minCoeff() <= scaledLimit );
+
+  // Rescale and shift Unif(-1,1) values to the interval [0,1]
+  U1 =  0.5*(U1 + Eigen::MatrixXd::Ones(N,1));
+  U2 =  0.5*(U2 + Eigen::MatrixXd::Ones(N,1));
+
+  // Compute transformed values with .noalias() to ensure evaluation
+  Matrix sampleVals;
+  sampleVals.noalias() = ((-2.0*(U1.array().log()).matrix()).array().sqrt() * (2*PI*U2).array().cos()).matrix();
+
+  return sampleVals;
+}
+
+
+// Generate equally spaced points on an interval or square region
+Matrix GP::linspace(double a, double b, int N, int dim)
+{
+
+  Matrix linspaceVals;
+  if ( dim == 1 )
+    {
+      linspaceVals.resize(N,1);
+      linspaceVals = Eigen::Array<double, Eigen::Dynamic, 1>::LinSpaced(N, a, b);
+    }
+  else if ( dim == 2 )
+    {
+      linspaceVals.resize(N*N,2);
+      Matrix linspaceVals1D = Eigen::Array<double, Eigen::Dynamic, 1>::LinSpaced(N, a, b);
+      int k = 0;
+      for ( auto i : boost::irange(0,N) )
+        {
+          for ( auto j : boost::irange(0,N) )
+            {
+              linspaceVals(k,0) = linspaceVals1D(i);
+              linspaceVals(k,1) = linspaceVals1D(j);
+              k++;
+            }
+        }
+    }
+  else
+      std::cout << "[*] GP::linspace has not been implemented for dim > 2\n";
+  
+  return linspaceVals;
+}
+
 // Define function for retrieving time from chrono
 float GP::getTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end)
 {
@@ -519,30 +575,6 @@ float GP::getTime(std::chrono::high_resolution_clock::time_point start, std::chr
 };
 
 
-// Define kernel function for RBF
-double GP::RBF::evalKernel(Matrix & x, Matrix & y, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
-    case 1: return (x-y).squaredNorm() / std::pow(params(0),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-};
-
-// Define distance kernel function for RBF
-//
-// REVISION:  Optimize w.r.t. theta = log(l) for stability  ==>   / l^2  instead of  / l^3
-//
-double GP::RBF::evalDistKernel(double d, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
-    case 1: return d / std::pow(params(0),2) * std::exp( -d / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-};
 
 
 

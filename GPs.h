@@ -28,11 +28,12 @@ namespace GP {
   float getTime(std::chrono::high_resolution_clock::time_point start, std::chrono::high_resolution_clock::time_point end);
   using time = std::chrono::high_resolution_clock::time_point;
   using std::chrono::high_resolution_clock;
-  
+
+  // Define linspace function for generating equally spaced points 
+  Matrix linspace(double a, double b, int N, int dim=1);
+
   // Define function for sampling uniform distribution on interval
   Matrix sampleUnif(double a=0.0, double b=1.0, int N=1, int dim=1);
-  //Matrix sampleUnif(double a=0.0, double b=1.0, int N=1);
-  //Matrix sampleUnifSquare(double a=0.0, double b=1.0, int dim=1, int N=1);
   Vector sampleUnifVector(Vector lbs, Vector ubs);
   Matrix sampleNormal(int N=1);
   
@@ -206,8 +207,6 @@ namespace GP {
   //Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> linspace(T a, T b, int N)
   //{ return Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(N, a, b); }
 
-  // Define linspace function for generating equally spaced points 
-  Matrix linspace(double a, double b, int N, int dim=1);
   
 };
 
