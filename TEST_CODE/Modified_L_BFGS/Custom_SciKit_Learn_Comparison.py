@@ -465,9 +465,9 @@ class GaussianProcessRegressor(BaseEstimator, RegressorMixin):
             ### DEBUGGING
             print("\n\n[*] Number of iterations:       {}\n".format(convergence_dict["nit"]))
             print("[*] Number of function calls:  {}\n".format(convergence_dict["funcalls"]))
-            #print("[*] Gradient at minimum:       {}\n".format(convergence_dict["grad"]))
-            #gradnorm = np.linalg.norm(np.array(convergence_dict["grad"]), ord=np.inf)
-            #print("[*] Gradient Norm at minimum:  {}\n".format(gradnorm))
+            print("[*] Gradient at minimum:       {}\n".format(convergence_dict["grad"]))
+            gradnorm = np.linalg.norm(np.array(convergence_dict["grad"]), ord=np.inf)
+            print("[*] Gradient Norm at minimum:  {}\n".format(gradnorm))
 
             
             if convergence_dict["warnflag"] != 0:

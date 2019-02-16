@@ -205,9 +205,9 @@ namespace GP {
     int gradientEvals = 0;
 
     // Check parameter changes
-    //double oldNoise = 0.0;
-    //double oldLength = 0.0;
-    //double oldGradient = 0.0;
+    double oldNoise = 0.0;
+    double oldLength = 0.0;
+    double oldGradient = 0.0;
   };
 
   // Define linspace function for generating
