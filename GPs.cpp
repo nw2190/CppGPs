@@ -166,32 +166,29 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       // Direct evaluation of inverse matrix
       //term.noalias() = cholesky.solve(Matrix::Identity(n,n)) - _alpha*_alpha.transpose();
 
+
       // Try forcing Eigen to solve in place
       term.noalias() = Matrix::Identity(n,n);
       cholesky.solveInPlace(term);
       term.noalias() -= _alpha*_alpha.transpose();
-      
+
       /*
       //
-      //          ---  PARALLEL IMPLEMENTATION  ---
+      //       ---  PARALLEL IMPLEMENTATION  ---
       //
-      //  [ Typically much slower; possibly not thread-safe... ]
+      //  [ Typically much slower; possible thread issue... ]
       //
-      term.resize(n,n);
+      term = Matrix::Identity(n,n);
       //Matrix ei = Eigen::MatrixXd::Zero(n,1);
       int i = 0;
-      //#pragma omp parallel for private(i) shared(cholesky, term, n)
 #pragma omp parallel for private(i) shared(cholesky, _alpha, term, n)
       for ( i=0 ; i<n ; i++ )
         {
-          Matrix ei = Eigen::MatrixXd::Zero(n,1);
-          ei(i) = 1.0;
-          //term.col(i) = cholesky.solve(ei);
-          term.col(i) = cholesky.solve(ei);
+          term.col(i) = cholesky.solve(term.col(i));
           term.col(i) -= _alpha(i)*_alpha;
         }
       */
-
+    
       
       //term.noalias() -= _alpha*_alpha.transpose();
       end = high_resolution_clock::now();

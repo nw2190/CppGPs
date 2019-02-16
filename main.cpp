@@ -63,7 +63,6 @@ int main(int argc, char const *argv[])
 
   // Fix random seed for debugging and testing
   //std::srand(static_cast<unsigned int>(0));
-  //std::srand(static_cast<unsigned int>(10000001));
 
 
   //
@@ -71,16 +70,16 @@ int main(int argc, char const *argv[])
   //
 
   // Specify the input dimensions
-  int inputDim = 1;
-  //int inputDim = 2;
+  //int inputDim = 1;
+  int inputDim = 2;
   
   // Specify observation data count
   int obsCount;
-    if ( inputDim == 1 )
-      obsCount = 250;
-    else
-      obsCount = 1000;
-  
+  if ( inputDim == 1 )
+    obsCount = 250;
+  else
+    obsCount = 1000;
+    
   // Specify observation noise level
   auto noiseLevel = 1.0;
 
@@ -132,7 +131,7 @@ int main(int argc, char const *argv[])
     model.setSolverPrecision(1e-4);
   else
     model.setSolverPrecision(1e-3);
-  //model.setSolverPrecision(5e-4);
+
   
   // Fit covariance kernel hyperparameters to the training data
   time start = high_resolution_clock::now();
@@ -198,8 +197,6 @@ int main(int argc, char const *argv[])
   
   // Save true and predicted means/variances to file
   std::string outputFile = "predictions.csv";
-  //Matrix trueSoln = testMesh.unaryExpr(std::ptr_fun(targetFunc));
-
   Matrix trueSoln(predCount,1);
   for ( auto i : boost::irange(0,predCount) )
     trueSoln(i,0) = targetFunc(testMesh.row(i));
