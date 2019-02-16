@@ -270,8 +270,12 @@ class LbfgsbSolver : public ISolver<TProblem, 1> {
       //std::cout << "\n[*] CALL 2\t" <<  (x.array().exp()).matrix().transpose() << "\n\n";
       f = problem.value(x);
 
+
+      ///
+      ///   FOLLOW SCIPY "FACTR" FORMAT
+      /// ( see https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.fmin_l_bfgs_b.html )
       // update the fDelta convergence status
-      this->m_current.fDelta = std::abs(f-f_old);
+      this->m_current.fDelta = std::abs(f-f_old)/(std::max(std::max(std::abs(f),std::abs(f_old)), 1.0));
       
       problem.gradient(x, g);
       // prepare for next iteration

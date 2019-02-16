@@ -139,8 +139,7 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
   params = params.array().exp().matrix();
 
   
-  //std::cout << "Theta =\t " <<  params.transpose()  << "\tDelta = \t"  << std::abs(oldNoise - params(0)) << "\t" << std::abs(oldLength - params(1));
-  //std::cout << "Theta =\t " <<  params.transpose()  << "\tDelta = \t"  << std::fixed << std::setw(8) << std::abs(oldNoise - params(0)) << "\t" << std::fixed << std::setw(8) << std::abs(oldLength - params(1)) <<  "\t\t Old Gradient = " << oldGradient << std::endl;
+  //std::cout << "Theta =\t " <<  params.transpose()  << "\tDelta = \t"  << std::abs(oldNoise - params(0)) << "\t" << std::abs(oldLength - params(1)) << std::endl;
   //oldNoise = params(0);
   //oldLength = params(1);
 
@@ -348,11 +347,16 @@ void GP::GaussianProcess::fitModel()
   //crit.xDelta = 0;           //!< Minimum change in parameter vector
   //crit.xDelta = 1e-307;           //!< Minimum change in parameter vector
   //double funcScale = 1000.0;
-  //double factr=1.0;
-  //static const double epsilon = std::numeric_limits<double>::min();
+  //double epsilon = 1e-32;
   //crit.fDelta = factr*epsilon/funcScale;           //!< Minimum change in cost function
   //crit.fDelta = 1e-3;           //!< Minimum change in cost function
-  crit.fDelta = 1e-2;           //!< Minimum change in cost function
+  //crit.fDelta = 1e-2;           //!< Minimum change in cost function
+  //crit.fDelta = 1e-1;           //!< Minimum change in cost function
+
+
+  //crit.fDelta = 1e-4;           //!< Minimum [relative] change in cost function
+  crit.fDelta = 7.5e-5;
+  
   //crit.condition = 0;
   solver.setStopCriteria(crit);
 
