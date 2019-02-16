@@ -73,15 +73,15 @@ int main(int argc, char const *argv[])
   //
 
   // Specify the input dimensions
-  int inputDim = 1;
-  //int inputDim = 2;
+  //int inputDim = 1;
+  int inputDim = 2;
   
   // Specify observation data count
   int obsCount;
   if ( inputDim == 1 )
     obsCount = 250;
   else
-    obsCount = 1000;
+    obsCount = 1500;
     
   // Specify observation noise level
   auto noiseLevel = 1.0;

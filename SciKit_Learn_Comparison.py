@@ -140,7 +140,7 @@ def main():
         model_samples = model.sample_y(Xtest, samples.shape[0])
 
     NLML = -model.log_marginal_likelihood()
-    print("NLML:   {:.4f}\n".format(NLML))
+    print("NLML:  {:.4f}\n".format(NLML))
 
 
 

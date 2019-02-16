@@ -120,7 +120,7 @@ namespace GP {
     Vector cppOptLibgrad;
 
     // Set methods
-    void setObs(Matrix & x, Matrix & y) { obsX = x; obsY = y; N = static_cast<int>(x.rows()); }
+    void setObs(Matrix & x, Matrix & y) { obsX = x; obsY = y; } 
     void setKernel(Kernel & k) { kernel = &k; }
     void setPred(Matrix & px) { predX = px; }
     void setNoise(double noise) { fixedNoise = true; noiseLevel = noise; }
@@ -143,18 +143,12 @@ namespace GP {
     double getNoise() { return noiseLevel; }
     
 
-    // Define method for superclass "GradientObj" used by 'cg_minimize' [only needed when using "./utils/minimize.h"]
-    //void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
-
   private:
     
     // Private member functions
     double evalNLML(const Vector & p); 
     double evalNLML(const Vector & p, Vector & g, bool evalGrad=false);
     
-    // Status variables  ( still needed ? )
-    int N = 0;
-
     // Kernel and covariance matrix
     Kernel * kernel;
     double noiseLevel = 0.0;
@@ -193,23 +187,19 @@ namespace GP {
     std::vector<Matrix> gradList;  
 
     // DEFINE TIMER VARIABLES
-    ///*
+    /*
     double time_computecov = 0.0;
     double time_cholesky_llt = 0.0;
     double time_alpha = 0.0;
     double time_NLML = 0.0;
     double time_term = 0.0;
     double time_grad = 0.0;
-
     double time_evaluation = 0.0;
-    //*/
+    */
 
     // Count gradient evaluations by optimizer
     int gradientEvals = 0;
 
-    // Track old noise/length values to check for redundant calculations in optimizer
-    //double oldN = 0.0;
-    //double oldL = 0.0;
   };
 
   
