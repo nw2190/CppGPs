@@ -243,19 +243,13 @@ class LbfgsbSolver : public ISolver<TProblem, 1> {
 
 
       // ORIGINAL
-      const Scalar rate = MoreThuente<TProblem, 1>::linesearch(x,  SubspaceMin-x ,  problem, alpha_init);
+      //const Scalar rate = MoreThuente<TProblem, 1>::linesearch(x,  SubspaceMin-x ,  problem, alpha_init);
 
       // MODIFIED
-      //TVector s = (SubspaceMin-x).eval();
+      TVector s = (SubspaceMin-x).eval();
       //MoreThuente<TProblem, 1>::cvsrch(problem, x, f, g, alpha_init, s);
-      //const Scalar rate = alpha_init;
-      
-      //MoreThuente<TProblem, 1>::cvsrch(problem, x, f, g, alpha_init, s, f_old);
-      //MoreThuente<TProblem, 1>::cvsrch(problem, x, f, g, alpha_init, s, this->m_stop, this->m_current, this->m_status);
-      
-      //std::cout << "L-BFGS x = " << (x.array().exp()).matrix().transpose() << std::endl;
-      //if ( !(this->m_status == Status::Continue) )
-      //  break;
+      MoreThuente<TProblem, 1>::cvsrch(problem, x, f, g, alpha_init, s, this->m_stop, this->m_current, this->m_status);
+      const Scalar rate = alpha_init;
 
       x = x - rate*(x-SubspaceMin);
       f = problem.value(x);

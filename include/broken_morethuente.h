@@ -40,9 +40,8 @@ class MoreThuente {
     return ak;
   }
 
-  static int cvsrch(ProblemType &objFunc, TVector &x, Scalar f, TVector &g, Scalar &stp, TVector &s) {
-  //static int cvsrch(ProblemType &objFunc, TVector &x, Scalar f, TVector &g, Scalar &stp, TVector &s, Scalar &f_old) {  
-  //static int cvsrch(ProblemType &objFunc, TVector &x, Scalar f, TVector &g, Scalar &stp, TVector &s, Criteria<Scalar> &stop, Criteria<Scalar> &current, Status &status) {  
+  //static int cvsrch(ProblemType &objFunc, TVector &x, Scalar f, TVector &g, Scalar &stp, TVector &s) {
+  static int cvsrch(ProblemType &objFunc, TVector &x, Scalar f, TVector &g, Scalar &stp, TVector &s, Criteria<Scalar> &stop, Criteria<Scalar> &current, Status &status) {  
     // we rewrite this from MIN-LAPACK and some MATLAB code
     int info           = 0;
     int infoc          = 1;
@@ -81,6 +80,9 @@ class MoreThuente {
     Scalar stmin;
     Scalar stmax;
 
+    // Define arbitrary previous function value
+    Scalar f_old = 1e9;
+
     while (true) {
 
       // make sure we stay in the interval when setting min/max-step-width
@@ -106,23 +108,20 @@ class MoreThuente {
 
       // test new point
       x = wa + stp * s;
+      f_old = f;
       f = objFunc.value(x);
-      //f_old = f;
       objFunc.gradient(x, g);
 
       // update stopping criteria
-      //current.fDelta = std::abs(f-f_old)/(std::max(std::max(std::abs(f),std::abs(f_old)), 1.0));
+      current.fDelta = std::abs(f-f_old)/(std::max(std::max(std::abs(f),std::abs(f_old)), 1.0));
       
       nfev++;
       Scalar dg = g.dot(s);
       Scalar ftest1 = finit + stp * dgtest;
 
       // Check problem convergence criteria
-      //status = checkConvergence(stop, current);
-      //if ( !(status == Status::Continue) )
-      //  std::cout << "\n[*] Break inside cvsrch()\t x = " << x.transpose() << std::endl;
-
-        
+      status = checkConvergence(stop, current);
+      
       // all possible convergence tests
       if ((brackt & ((stp <= stmin) | (stp >= stmax))) | (infoc == 0))
         info = 6;

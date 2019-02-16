@@ -128,9 +128,9 @@ int main(int argc, char const *argv[])
 
   // Specify solver precision
   if ( inputDim == 1 )
-    model.setSolverPrecision(7.5e-5);
-  else
     model.setSolverPrecision(1e-4);
+  else
+    model.setSolverPrecision(5e-4);
   
   // Fit covariance kernel hyperparameters to the training data
   time start = high_resolution_clock::now();
