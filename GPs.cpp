@@ -51,7 +51,8 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 
 
 // Compute covariance matrix (and gradients) from a vector of squared pairwise distances Dv
-std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, double jitter, bool evalGrad)
+//std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, double jitter, bool evalGrad)
+void GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad)
 {
   auto n = static_cast<int>(K.rows());
   int lengthIndex;
@@ -69,15 +70,16 @@ std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params
     }
 
   // Compute gradient list if "evalGrad=true"
-  std::vector<Matrix> gradList;
+  //std::vector<Matrix> gradList;
   if ( evalGrad )
     {
       dK_iv.noalias() = 1/std::pow(params(lengthIndex),2) * ( Dv.array() * Kv.array() ).matrix();
       squareForm(dK_i, dK_iv, n); // Note: diagVal = 0.0
-      gradList.push_back(dK_i);
+      //gradList.push_back(dK_i);
+      gradList[0] = dK_i;
     }
 
-  return gradList;
+  //return gradList;
   
 };
 
@@ -141,7 +143,8 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
   // Compute covariance matrix and store Cholesky factor
   K.resize(n,n);
   time start = high_resolution_clock::now();
-  auto gradList = (*kernel).computeCov(K, distMatrix, params, jitter, evalGrad);
+  //auto gradList = (*kernel).computeCov(K, distMatrix, params, jitter, evalGrad);
+  (*kernel).computeCov(K, distMatrix, params, gradList, jitter, evalGrad);
   time end = high_resolution_clock::now();
   time_computecov += getTime(start, end);
 
@@ -171,6 +174,11 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       // [ THIS APPEARS TO BE A COMPUTATIONAL BOTTLE-NECK ]
       //
 
+      //std::cout << "\nThetas =\t" << std::log(params(0)) << "\t" << std::log(params(1)) << std::endl;
+      //std::cout << "\nDeltas =\t" << std::abs(params(0)-oldN) << "\t" << std::abs(params(0)-oldN)  << std::endl;
+      //oldN = params(0);
+      //oldL = params(1);
+      
       start = high_resolution_clock::now();
       // Direct evaluation of inverse matrix
       //term.noalias() = cholesky.solve(Matrix::Identity(n,n)) - _alpha*_alpha.transpose();
@@ -303,6 +311,14 @@ void GP::GaussianProcess::fitModel()
   // Declare vector for storing gradient calculations
   Vector g(augParamCount);
 
+  // Initialize gradient list with identity matrices
+  for ( auto i : boost::irange(0,augParamCount) )
+    {
+      // Avoid compiler warning for unused variable
+      (void)i;
+      gradList.push_back(Matrix::Identity(static_cast<int>(obsY.size()),static_cast<int>(obsY.size())));
+    }
+
   // Initialize gradient vector size
   cppOptLibgrad.resize(augParamCount);
 
@@ -341,7 +357,8 @@ void GP::GaussianProcess::fitModel()
   ///* [ This is included in the SciKit Learn model.fit() call as well ]
 
   // Recompute covariance and Cholesky factor
-  auto nullGradList = (*kernel).computeCov(K, distMatrix, optParams);
+  //auto nullGradList = (*kernel).computeCov(K, distMatrix, optParams);
+  (*kernel).computeCov(K, distMatrix, optParams, gradList, jitter, false);
   cholesky = K.llt();
   _alpha.noalias() = cholesky.solve(obsY);
 

@@ -51,7 +51,8 @@ namespace GP {
     virtual ~Kernel() = default;
 
     // Compute the covariance matrix provided a "distance matrix" consisting of pairwise squared norms between points
-    virtual std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, double jitter=0.0, bool evalGrad=false) = 0;
+    //virtual std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, double jitter=0.0, bool evalGrad=false) = 0;
+    virtual void computeCov(Matrix & K, Matrix & D, Vector & params, std::vector<Matrix> & gradList, double jitter=0.0, bool evalGrad=false) = 0;
 
     // Compute the (cross-)covariance matrix for specified input vectors X1 and X2
     virtual void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params) = 0;
@@ -84,7 +85,8 @@ namespace GP {
     RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
 
     // Compute the covariance matrix provided a "distance matrix" consisting of pairwise squared norms between points
-    std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, double jitter=0.0, bool evalGrad=false);
+    //std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, double jitter=0.0, bool evalGrad=false);
+    void computeCov(Matrix & K, Matrix & D, Vector & params, std::vector<Matrix> & gradList, double jitter=0.0, bool evalGrad=false);
 
     // Compute the (cross-)covariance matrix for specified input vectors X1 and X2
     void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params);
@@ -193,7 +195,9 @@ namespace GP {
     int paramCount;
     int augParamCount;
     Matrix term;
-    //std::vector<Matrix> gradList;  // Need to find a way to avoid creating new gradList each time...
+
+    // Need to find a way to avoid creating new gradList each time...
+    std::vector<Matrix> gradList;  
 
     // DEFINE TIMER VARIABLES
     ///*
@@ -207,6 +211,9 @@ namespace GP {
     // Count gradient evaluations by optimizer
     int gradientEvals = 0;
 
+    // Track old noise/length values to check for redundant calculations in optimizer
+    //double oldN = 0.0;
+    //double oldL = 0.0;
   };
 
   

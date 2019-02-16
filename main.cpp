@@ -63,6 +63,7 @@ int main(int argc, char const *argv[])
 
   // Fix random seed for debugging and testing
   //std::srand(static_cast<unsigned int>(0));
+  //std::srand(static_cast<unsigned int>(10000001));
 
 
   //

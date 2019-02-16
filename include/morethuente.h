@@ -24,6 +24,7 @@ class MoreThuente {
    * @return step-width
    */
 
+  /*
   static Scalar linesearch(const TVector &x, const TVector &searchDir, ProblemType &objFunc, const  Scalar alpha_init = 1.0) {
     // assume step width
     Scalar ak = alpha_init;
@@ -39,10 +40,30 @@ class MoreThuente {
 
     return ak;
   }
+  */
 
-  static int cvsrch(ProblemType &objFunc, TVector &x, Scalar f, TVector &g, Scalar &stp, TVector &s) {
+  //static Scalar linesearch(const TVector &x, const TVector &searchDir, ProblemType &objFunc, const  Scalar alpha_init, Scalar fval, TVector gval, int &info) {
+  static Scalar linesearch(const TVector &x, const TVector &searchDir, ProblemType &objFunc, const  Scalar alpha_init, Scalar &fval, TVector & gval, int &info) {
+    // assume step width
+    Scalar ak = alpha_init;
+
+    //Scalar fval = objFunc.value(x);
+    //TVector  g  = x.eval();
+    //objFunc.gradient(x, g);
+
+    TVector s = searchDir.eval();
+    TVector xx = x.eval();
+
+    //cvsrch(objFunc, xx, fval, g, ak, s);
+    info = cvsrch(objFunc, xx, fval, gval, ak, s);
+
+    return ak;
+  }
+  
+
+  static int cvsrch(ProblemType &objFunc, TVector &x, Scalar &f, TVector &g, Scalar &stp, TVector &s) {
   //static int cvsrch(ProblemType &objFunc, TVector &x, Scalar f, TVector &g, Scalar &stp, TVector &s, Scalar &f_old) {  
-  //static int cvsrch(ProblemType &objFunc, TVector &x, Scalar f, TVector &g, Scalar &stp, TVector &s, Criteria<Scalar> &stop, Criteria<Scalar> &current, Status &status) {  
+  //static int cvsrch(ProblemType &objFunc, TVector &x, Scalar f, TVector &g, Scalar &stp, TVector &s, Criteria<Scalar> &stop, Criteria<Scalar> &current, Status &status) {    
     // we rewrite this from MIN-LAPACK and some MATLAB code
     int info           = 0;
     int infoc          = 1;
@@ -54,6 +75,7 @@ class MoreThuente {
     const Scalar xtrapf = 4;
     const int maxfev   = 20;
     int nfev           = 0;
+
 
     Scalar dginit = g.dot(s);
     if (dginit >= 0.0) {
@@ -95,7 +117,7 @@ class MoreThuente {
       // Force the step to be within the bounds stpmax and stpmin.
       stp = std::max<Scalar>(stp, stpmin);
       stp = std::min<Scalar>(stp, stpmax);
-
+      
       // Oops, let us return the last reliable values
       if (
       (brackt && ((stp <= stmin) || (stp >= stmax)))
@@ -103,16 +125,14 @@ class MoreThuente {
       || (brackt && ((stmax - stmin) <= (xtol * stmax)))) {
         stp = stx;
       }
-
+      
       // test new point
       x = wa + stp * s;
       f = objFunc.value(x);
-      //f_old = f;
       objFunc.gradient(x, g);
-
-      // update stopping criteria
-      //current.fDelta = std::abs(f-f_old)/(std::max(std::max(std::abs(f),std::abs(f_old)), 1.0));
       
+      // update stopping criteria
+      //current.fDelta = std::abs(f-f_old)/(std::max(std::max(std::abs(f),std::abs(f_old)), 1.0));      
       nfev++;
       Scalar dg = g.dot(s);
       Scalar ftest1 = finit + stp * dgtest;
@@ -121,8 +141,8 @@ class MoreThuente {
       //status = checkConvergence(stop, current);
       //if ( !(status == Status::Continue) )
       //  std::cout << "\n[*] Break inside cvsrch()\t x = " << x.transpose() << std::endl;
-
-        
+      
+ 
       // all possible convergence tests
       if ((brackt & ((stp <= stmin) | (stp >= stmax))) | (infoc == 0))
         info = 6;
@@ -144,7 +164,12 @@ class MoreThuente {
 
       // terminate when convergence reached
       if (info != 0)
-        return -1;
+        {
+          //std::cout << "\n[*] Line Search Terminated\n";
+          //std::cout << "Function Evaluations: " << nfev << "\t INFO = " << info << "\t x = " << x.transpose() << std::endl;
+          return info;
+          //return -1;
+        }
 
       if (stage1 & (f <= ftest1) & (dg >= std::min<Scalar>(ftol, gtol)*dginit))
         stage1 = false;
@@ -168,7 +193,7 @@ class MoreThuente {
         cstep( stx, fx, dgx, sty, fy, dgy, stp, f, dg, brackt, stmin, stmax, infoc);
       }
 
-      if (brackt) {
+      if (brackt) {        
         if (fabs(sty - stx) >= 0.66 * width1)
           stp = stx + 0.5 * (sty - stx);
         width1 = width;

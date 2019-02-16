@@ -243,9 +243,15 @@ class LbfgsbSolver : public ISolver<TProblem, 1> {
 
 
       // ORIGINAL
-      const Scalar rate = MoreThuente<TProblem, 1>::linesearch(x,  SubspaceMin-x ,  problem, alpha_init);
+      //const Scalar rate = MoreThuente<TProblem, 1>::linesearch(x,  SubspaceMin-x ,  problem, alpha_init);
 
-      // MODIFIED
+
+      // MODIFIED I
+      int info = 0;
+      const Scalar rate = MoreThuente<TProblem, 1>::linesearch(x,  SubspaceMin-x ,  problem, alpha_init, f, g, info);
+      //std::cout << "[ INFO = " << info << " \t x = " << x.transpose() << " ]\n";
+ 
+      // MODIFIED II
       //TVector s = (SubspaceMin-x).eval();
       //MoreThuente<TProblem, 1>::cvsrch(problem, x, f, g, alpha_init, s);
       //const Scalar rate = alpha_init;
@@ -257,16 +263,24 @@ class LbfgsbSolver : public ISolver<TProblem, 1> {
       //if ( !(this->m_status == Status::Continue) )
       //  break;
 
-      x = x - rate*(x-SubspaceMin);
-      f = problem.value(x);
 
+      x = x - rate*(x-SubspaceMin);
+
+      if ( info != 1 )
+        {
+          std::cout << "\n[*] WARNING: Unexpected line-search exit status; re-evaluating...\n";
+          f = problem.value(x);
+          problem.gradient(x, g);
+        }
+
+      
       ///
       ///   UPDATE RELATIVE ERROR AND ASSIGN TO FDELTA FOR CONVERGENCE CRIETERIA TESTS
       /// ( see https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.fmin_l_bfgs_b.html )
       // update the fDelta convergence status
       this->m_current.fDelta = std::abs(f-f_old)/(std::max(std::max(std::abs(f),std::abs(f_old)), 1.0));
       
-      problem.gradient(x, g);
+
       // prepare for next iteration
       TVector newY = g - g_old;
       TVector newS = x - x_old;
