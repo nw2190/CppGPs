@@ -71,7 +71,7 @@ namespace GP {
     int paramCount;
     double noiseLevel;
     //virtual double evalKernel(Matrix&, Matrix&, Vector&, int) = 0;
-    //virtual double evalDistKernel(double, Vector&, int) = 0;
+    virtual double evalDistKernel(double, Vector&, int) = 0;
   };
 
 
@@ -93,7 +93,7 @@ namespace GP {
 
     // Functions for evaluating the kernel on a pair of points / a specified squared distance
     //double evalKernel(Matrix&, Matrix&, Vector&, int);
-    //double evalDistKernel(double, Vector&, int);
+    double evalDistKernel(double, Vector&, int);
     
     Matrix Kv;
     Matrix dK_i;

@@ -78,6 +78,19 @@ void GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, std::vector<M
 };
 
 
+// Define distance kernel function for RBF
+// [ Note: Optimize w.r.t. theta = log(l) for stability  ==>   / l^2  instead of  / l^3 ]
+double GP::RBF::evalDistKernel(double d, Vector & params, int n)
+{
+  switch (n)
+    {
+    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
+    case 1: return d / std::pow(params(0),2) * std::exp( -d / (2.0*std::pow(params(0),2)));
+    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
+    }
+};
+
+
 // Compute cross covariance between two input vectors using kernel parameters params
 void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params)
 {
@@ -570,17 +583,6 @@ double GP::RBF::evalKernel(Matrix & x, Matrix & y, Vector & params, int n)
     }
 };
 
-// Define distance kernel function for RBF
-// [ Note: Optimize w.r.t. theta = log(l) for stability  ==>   / l^2  instead of  / l^3 ]
-double GP::RBF::evalDistKernel(double d, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
-    case 1: return d / std::pow(params(0),2) * std::exp( -d / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-};
 */
 
 
