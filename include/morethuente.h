@@ -81,6 +81,7 @@ class MoreThuente {
     if (dginit >= 0.0) {
       // no descent direction
       // TODO: handle this case
+      std::cout << "\n[*] Warning: no descent direction found (handling not yet implemented in cppoptlib)\n";
       return -1;
     }
 

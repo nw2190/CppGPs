@@ -35,6 +35,18 @@ double targetFunc(Eigen::MatrixXd X)
     }
 }
 
+// Specify multi-modal target function for testing
+double targetFuncMultiModal(Eigen::MatrixXd X)
+{
+  Eigen::MatrixXd p1(1,2);  p1 << 0.25, 0.5;
+  Eigen::MatrixXd p2(1,2);  p2 << -0.25, -0.5;
+  double scale1 = 10.0; double scale2 = 15.0;
+  double sigma1 = 0.4;  double sigma2 = 0.3;
+  double radialTerm1 = ((X-p1)*(1/sigma1)).squaredNorm();
+  double radialTerm2 = ((X-p2)*(1/sigma2)).squaredNorm();
+  return scale1*std::exp(-radialTerm1) + scale2*std::exp(-radialTerm2);
+}
+
 
 // Example use of CppGPs code for Gaussian process regression
 int main(int argc, char const *argv[])
@@ -81,7 +93,7 @@ int main(int argc, char const *argv[])
   if ( inputDim == 1 )
     obsCount = 250;
   else
-    obsCount = 1500;
+    obsCount = 2000;
     
   // Specify observation noise level
   auto noiseLevel = 1.0;
@@ -99,6 +111,7 @@ int main(int argc, char const *argv[])
   // to the input observations 'X' and adding a noise vector
   for ( auto i : boost::irange(0,obsCount) )
     y(i) = targetFunc(X.row(i)) + noise(i);
+  //y(i) = targetFuncMultiModal(X.row(i)) + noise(i);
 
 
   
@@ -198,6 +211,7 @@ int main(int argc, char const *argv[])
   Matrix trueSoln(predCount,1);
   for ( auto i : boost::irange(0,predCount) )
     trueSoln(i,0) = targetFunc(testMesh.row(i));
+  //trueSoln(i,0) = targetFuncMultiModal(testMesh.row(i));
 
   std::ofstream fout;
   fout.open(outputFile);

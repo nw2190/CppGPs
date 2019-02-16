@@ -268,7 +268,7 @@ class LbfgsbSolver : public ISolver<TProblem, 1> {
 
       if ( info != 1 )
         {
-          std::cout << "\n[*] WARNING: Unexpected line-search exit status; re-evaluating...\n";
+          std::cout << "\n[*] WARNING: Unexpected line-search exit status; re-evaluating... [ INFO = " << info << " ]\n";
           f = problem.value(x);
           problem.gradient(x, g);
         }

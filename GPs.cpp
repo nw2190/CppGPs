@@ -282,7 +282,7 @@ void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCo
   ubs.resize(augParamCount);
 
   double defaultLowerBound = 0.00001;
-  double defaultUpperBound = 10.0;
+  double defaultUpperBound = 20.0;
   
   if ( fixedBounds )
     {

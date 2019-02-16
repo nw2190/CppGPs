@@ -111,7 +111,7 @@ def main():
     normalize_y = False
     use_white_noise = True
     RBF_bounds = [0.01, 100.0]
-    Noise_bounds = [0.00001, 10.0]
+    Noise_bounds = [0.00001, 20.0]
     jitter = 1e-7
 
     # Define kernel for SciKit Learn Gaussian process regression model
