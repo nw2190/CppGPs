@@ -51,7 +51,6 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 
 
 // Compute covariance matrix (and gradients) from a vector of squared pairwise distances Dv
-//std::vector<Matrix> GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, double jitter, bool evalGrad)
 void GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad)
 {
   auto n = static_cast<int>(K.rows());
@@ -70,12 +69,10 @@ void GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, std::vector<M
     }
 
   // Compute gradient list if "evalGrad=true"
-  //std::vector<Matrix> gradList;
   if ( evalGrad )
     {
       dK_iv.noalias() = 1/std::pow(params(lengthIndex),2) * ( Dv.array() * Kv.array() ).matrix();
       squareForm(dK_i, dK_iv, n); // Note: diagVal = 0.0
-      //gradList.push_back(dK_i);
       gradList[0] = dK_i;
     }
 
@@ -143,7 +140,6 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
   // Compute covariance matrix and store Cholesky factor
   K.resize(n,n);
   time start = high_resolution_clock::now();
-  //auto gradList = (*kernel).computeCov(K, distMatrix, params, jitter, evalGrad);
   (*kernel).computeCov(K, distMatrix, params, gradList, jitter, evalGrad);
   time end = high_resolution_clock::now();
   time_computecov += getTime(start, end);
@@ -357,7 +353,6 @@ void GP::GaussianProcess::fitModel()
   ///* [ This is included in the SciKit Learn model.fit() call as well ]
 
   // Recompute covariance and Cholesky factor
-  //auto nullGradList = (*kernel).computeCov(K, distMatrix, optParams);
   (*kernel).computeCov(K, distMatrix, optParams, gradList, jitter, false);
   cholesky = K.llt();
   _alpha.noalias() = cholesky.solve(obsY);

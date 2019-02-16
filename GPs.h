@@ -51,7 +51,6 @@ namespace GP {
     virtual ~Kernel() = default;
 
     // Compute the covariance matrix provided a "distance matrix" consisting of pairwise squared norms between points
-    //virtual std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, double jitter=0.0, bool evalGrad=false) = 0;
     virtual void computeCov(Matrix & K, Matrix & D, Vector & params, std::vector<Matrix> & gradList, double jitter=0.0, bool evalGrad=false) = 0;
 
     // Compute the (cross-)covariance matrix for specified input vectors X1 and X2
@@ -85,7 +84,6 @@ namespace GP {
     RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
 
     // Compute the covariance matrix provided a "distance matrix" consisting of pairwise squared norms between points
-    //std::vector<Matrix> computeCov(Matrix & K, Matrix & D, Vector & params, double jitter=0.0, bool evalGrad=false);
     void computeCov(Matrix & K, Matrix & D, Vector & params, std::vector<Matrix> & gradList, double jitter=0.0, bool evalGrad=false);
 
     // Compute the (cross-)covariance matrix for specified input vectors X1 and X2
