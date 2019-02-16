@@ -116,14 +116,14 @@ The artificial observation data and corresponding predictions/samples are saved 
 
 
 <p align="center">
-  <img width="90%" alt="Example regression plot in one dimension" src="utils/1D_example.png" style="margin: auto;">
+  <img width="90%" alt="Example regression plot in one dimension" src="misc/1D_example.png" style="margin: auto;">
 </p>
 
 
 For the two dimensional case (i.e. when `inputDim=2` in the `main.cpp` file), an additional figure illustrating the predictive uncertainty of the model is provided; this plot corresponds to a slice of the predictive mean, transparent standard deviation bounds, and the observation data points used for training:
 
 <p align="center">
-  <img width="90%" alt="Example plot of the predictive uncertainty" src="utils/predictive_uncertainty.png" style="margin: auto;">
+  <img width="90%" alt="Example plot of the predictive uncertainty" src="misc/predictive_uncertainty.png" style="margin: auto;">
 </p>
 
 
@@ -135,7 +135,7 @@ The results of the CppGP code and SciKit Learn `GaussianProcessRegressor` class 
 
 
 <p align="center">
-  <img width="90%" alt="Example regression plot in two dimensions" src="utils/2D_Comparison.png" style="margin: auto;">
+  <img width="90%" alt="Example regression plot in two dimensions" src="misc/2D_Comparison.png" style="margin: auto;">
 </p>
 
 
@@ -157,7 +157,7 @@ __Note:__ This will take _much_ more time to run than the standard execution tim
 A graph visualization of the node-wise executation times in the program can then be created via:
 ```
 perf record -g -- ./Run
-perf script | c++filt | gprof2dot -s -n 5.25 -f perf | dot -Tpng -o utils/profilier_output.png
+perf script | c++filt | gprof2dot -s -n 5.25 -f perf | dot -Tpng -o misc/profilier_output.png
 ```
 [//]: # (COMMENT: perf script | c++filt | python /usr/lib/python3.7/site-packages/gprof2dot.py -f perf | dot -Tpng -o output.png)
 
@@ -169,7 +169,7 @@ __Note:__ The `-s` flag can also be removed from the `gprof2dot` call to show pa
 An example graph generated using the procedures outlined above is provided below:
 
 <p align="center">
-  <img width="90%" alt="Example profilier graph" src="utils/profilier_output.png" style="margin: auto;">
+  <img width="90%" alt="Example profilier graph" src="misc/profilier_output.png" style="margin: auto;">
 </p>
 
 As can be seen from the figure, the majority of the computational demand of the CppGPs implementation results from the  `Eigen::LLT::solveInPlace` method.  This corresponds to the term `cholesky.solve(Matrix::Identity(n,n))` in the `evalNLML()` function definition, which is used to compute the gradients of the NLML with respect to the hyperparameters.  A preliminary parallelized implementation has been included in the comments, however this naive attempt at concurency currently results in even slower evaluation times (but achieves close to 100% CPU usage at least...).
