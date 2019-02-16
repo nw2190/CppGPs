@@ -8,7 +8,7 @@
 #include <boost/range/irange.hpp>
 #include <Eigen/Dense>
 #include "GPs.h"
-#include <iomanip>
+
 // Include CppOptLib files
 #include "./include/cppoptlib/meta.h"
 #include "./include/cppoptlib/boundedproblem.h"
@@ -138,11 +138,6 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
   auto params = static_cast<Vector>(p);
   params = params.array().exp().matrix();
 
-  
-  //std::cout << "Theta =\t " <<  params.transpose()  << "\tDelta = \t"  << std::abs(oldNoise - params(0)) << "\t" << std::abs(oldLength - params(1)) << std::endl;
-  //oldNoise = params(0);
-  //oldLength = params(1);
-
   // Compute covariance matrix and store Cholesky factor
   K.resize(n,n);
   time start = high_resolution_clock::now();
@@ -157,8 +152,6 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
 
   // Store alpha for DNLML calculation
   _alpha.noalias() = cholesky.solve(obsY);
-  //_alpha = obsY;
-  //cholesky.solveInPlace(_alpha);
 
   // Compute NLML value
   start = high_resolution_clock::now();
@@ -232,10 +225,9 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       end = high_resolution_clock::now();
       time_grad += getTime(start, end);
 
-      //std::cout << "\nGradient = " << g.transpose() << std::endl;
+      // Update gradient evaluation count
       gradientEvals += 1;
 
-      //oldGradient = g.norm();
     }
 
   return NLML_value;
@@ -290,15 +282,6 @@ void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCo
       ubs = ( defaultUpperBound * Eigen::MatrixXd::Ones(augParamCount,1) ).array().log().matrix();
     }
 
-  /*
-  std::cout << "Bounds:\n";
-  std::cout << lbs.array().exp().matrix().transpose() << std::endl;
-  std::cout << ubs.array().exp().matrix().transpose() << std::endl;
-  std::cout << "\nLog Bounds:\n";
-  std::cout << lbs.transpose() << std::endl;
-  std::cout << ubs.transpose() << std::endl << std::endl;
-  */
-
 }
 
 
@@ -328,13 +311,6 @@ void GP::GaussianProcess::fitModel()
   parseBounds(lbs, ubs, augParamCount);
 
   Vector optParams = Eigen::MatrixXd::Zero(augParamCount,1);
-  //Vector optParams = Eigen::MatrixXd::Ones(augParamCount,1);
-  //optParams(0) = 0.05826891;
-  //optParams(1) = -2.71507482;
-
-  //std::cout << "\nINITIAL GRADIENT:\n";
-  //Vector displayGradinit(2);
-  //double valinit = evalNLML(optParams,displayGradinit,true);
   
   this->setLowerBound(lbs);
   this->setUpperBound(ubs);
@@ -342,24 +318,10 @@ void GP::GaussianProcess::fitModel()
 
   // Specify stopping criteria
   cppoptlib::Criteria<double> crit = cppoptlib::Criteria<double>::defaults();
-  //crit.iterations = 10;
+  //crit.iterations = 10; //!< Maximum number of iterations
   crit.gradNorm = 1e-6;   //!< Minimum norm of gradient vector
-  //crit.xDelta = 0;           //!< Minimum change in parameter vector
-  //crit.xDelta = 1e-307;           //!< Minimum change in parameter vector
-  //double funcScale = 1000.0;
-  //double epsilon = 1e-32;
-  //crit.fDelta = factr*epsilon/funcScale;           //!< Minimum change in cost function
-  //crit.fDelta = 1e-3;           //!< Minimum change in cost function
-  //crit.fDelta = 1e-2;           //!< Minimum change in cost function
-  //crit.fDelta = 1e-1;           //!< Minimum change in cost function
-
-
-  //crit.fDelta = 1e-4;           //!< Minimum [relative] change in cost function
-  crit.fDelta = 7.5e-5;
-  
-  //crit.condition = 0;
+  crit.fDelta = 7.5e-5;   //!< Minimum [relative] change in cost function
   solver.setStopCriteria(crit);
-
   solver.setHistorySize(10);
   
   solver.minimize(*this, optParams);
@@ -368,9 +330,7 @@ void GP::GaussianProcess::fitModel()
   std::cout << "\nSolver Criteria |";
   std::cout << "\n----------------\n" << solver.criteria() << std::endl;
   std::cout << "gradEvals =\t" << gradientEvals <<std::endl;
-  // Dispaly final gradient
-  //Vector displayGrad(2);
-  //double val = evalNLML(optParams,displayGrad,true);
+
   
   // ASSUME OPTIMIZATION OVER LOG VALUES
   optParams = optParams.array().exp().matrix();
@@ -383,11 +343,6 @@ void GP::GaussianProcess::fitModel()
   cholesky = K.llt();
   _alpha.noalias() = cholesky.solve(obsY);
 
-  // This is probably not worth solving in place...
-  //_alpha = obsY;
-  //cholesky.solveInPlace(_alpha);
-  //*/
-  
   
   // Assign tuned parameters to model
   if (!fixedNoise)
@@ -432,15 +387,8 @@ void GP::GaussianProcess::predict()
   kstarmat.resize(m,m);
   (*kernel).computeCrossCov(kstarmat, predX, predX, params);
 
-  // Possible redundant calculations; should simplify...
-  Matrix cholMat(cholesky.matrixL());
-  //Matrix alpha = cholesky.solve(obsY);
-  //Matrix v = kstar;
-  //cholMat.triangularView<Eigen::Lower>().solveInPlace(v);
-  //predMean = kstar.transpose() * _alpha;
-  //predCov = kstarmat - v.transpose() * v;
-
   // Set predictive means/variances and compute negative log marginal likelihood
+  Matrix cholMat(cholesky.matrixL());
   predMean.noalias() = kstar_and_v.transpose() * _alpha;
   cholMat.triangularView<Eigen::Lower>().solveInPlace(kstar_and_v);  // kstar_and_v is now 'v'
   predCov.noalias() = kstarmat - kstar_and_v.transpose() * kstar_and_v;

@@ -6,7 +6,6 @@
 #include <chrono>
 #include <cmath>
 #include <Eigen/Dense>
-//#include "./utils/minimize.h"
 
 // Include CppOptLib files
 #include "./include/cppoptlib/meta.h"
@@ -204,17 +203,7 @@ namespace GP {
     // Count gradient evaluations by optimizer
     int gradientEvals = 0;
 
-    // Check parameter changes
-    //double oldNoise = 0.0;
-    //double oldLength = 0.0;
-    //double oldGradient = 0.0;
   };
-
-  // Define linspace function for generating
-  // equally spaced points on an interval
-  //template <typename T>
-  //Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> linspace(T a, T b, int N)
-  //{ return Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(N, a, b); }
 
   
 };
