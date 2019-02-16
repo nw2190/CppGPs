@@ -218,6 +218,7 @@ class LbfgsbSolver : public ISolver<TProblem, 1> {
     MatrixType yHistory = MatrixType::Zero(DIM, 0);
     MatrixType sHistory = MatrixType::Zero(DIM, 0);
     TVector x = x0, g = x0;
+    //std::cout << "[*] CALL 1\n";
     Scalar f = problem.value(x);
     problem.gradient(x, g);
     // conv. crit.
@@ -241,20 +242,37 @@ class LbfgsbSolver : public ISolver<TProblem, 1> {
       // STEP 4: perform linesearch and STEP 5: compute gradient
       Scalar alpha_init = 1.0;
 
-
-      // ORIGINAL
+      
       //const Scalar rate = MoreThuente<TProblem, 1>::linesearch(x,  SubspaceMin-x ,  problem, alpha_init);
 
-      // MODIFIED
+
+
+
+      //static Scalar linesearch(const TVector &x, const TVector &searchDir, ProblemType &objFunc, const  Scalar alpha_init = 1.0)
+
+        
+      //std::cout << "\n[*] MORETHUENTE.h linesearch() \t " << (x.array().exp()).matrix().transpose() << "\n\n";
+      //Scalar fval = objFunc.value(x);
+      //TVector  g  = x.eval();
+      //objFunc.gradient(x, g);
+        
       TVector s = (SubspaceMin-x).eval();
+      //TVector xx = x.eval();
+
       MoreThuente<TProblem, 1>::cvsrch(problem, x, f, g, alpha_init, s);
       const Scalar rate = alpha_init;
 
+      
+      //std::cout << "\nLINE SEARCH - rate = " << rate << "\tSUBSPACEMIN =  " << SubspaceMin.transpose() << std::endl;
+      // update current guess and function information
+      //std::cout << "OLD X = " << (x.array().exp()).matrix().transpose() << "\n";
       x = x - rate*(x-SubspaceMin);
+      //std::cout << "\n[*] CALL 2\t" <<  (x.array().exp()).matrix().transpose() << "\n\n";
       f = problem.value(x);
 
+
       ///
-      ///   UPDATE RELATIVE ERROR AND ASSIGN TO FDELTA FOR CONVERGENCE CRIETERIA TESTS
+      ///   FOLLOW SCIPY "FACTR" FORMAT
       /// ( see https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.fmin_l_bfgs_b.html )
       // update the fDelta convergence status
       this->m_current.fDelta = std::abs(f-f_old)/(std::max(std::max(std::abs(f),std::abs(f_old)), 1.0));
@@ -293,6 +311,8 @@ class LbfgsbSolver : public ISolver<TProblem, 1> {
       }
       ++this->m_current.iterations;
       this->m_current.gradNorm = g.norm();
+      //std::cout << "\n--------------------------------  CONVERGENCE CHECK  --------------------------------\n";
+      //std::cout << "Current fDelta = " << this->m_current.fDelta << std::endl;
       this->m_status = checkConvergence(this->m_stop, this->m_current);
     }
     x0 = x;
