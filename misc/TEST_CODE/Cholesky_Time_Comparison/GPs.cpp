@@ -3,7 +3,6 @@
 #include <vector>
 #include <chrono>
 #include <memory>
-#include <thread>
 #include <random>
 #include <limits>
 #include <boost/range/irange.hpp>
@@ -51,17 +50,9 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 
 
 // Compute covariance matrix (and gradients) from a vector of squared pairwise distances Dv
-//void GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad)
-void GP::RBF::computeCov(Matrix & K, Matrix & obsX, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad)
+void GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad)
 {
   auto n = static_cast<int>(K.rows());
-
-  // Compute distance matrix for each call
-  Matrix Dv;
-  pdist(Dv, obsX, obsX);
-  
-  Matrix Kv;
-  
   int lengthIndex;
   if ( params.size() > paramCount )
     {
@@ -79,12 +70,9 @@ void GP::RBF::computeCov(Matrix & K, Matrix & obsX, Vector & params, std::vector
   // Compute gradient list if "evalGrad=true"
   if ( evalGrad )
     {
-      Matrix dK_i;
-      Matrix dK_iv;
       dK_iv.noalias() = 1/std::pow(params(lengthIndex),2) * ( Dv.array() * Kv.array() ).matrix();
       squareForm(dK_i, dK_iv, n); // Note: diagVal = 0.0
-      //gradList[0] = dK_i;
-      gradList[0] = dK_i.eval();
+      gradList[0] = dK_i;
     }
 
 };
@@ -119,11 +107,16 @@ void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & par
 };
 
 
+// Precompute distance matrix to avoid repeated calculations during optimization procedure
+void GP::GaussianProcess::computeDistMat()
+{
+  pdist(distMatrix, obsX, obsX);
+}
+
+
 // Evaluate NLML for specified kernel hyperparameters p
 double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad)
 {
-  time EVAL_start = high_resolution_clock::now();
-  
   // Get matrix input observation count
   auto n = static_cast<int>(obsX.rows());
 
@@ -132,33 +125,25 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
   params = params.array().exp().matrix();
 
   // Compute covariance matrix and store Cholesky factor
-  Matrix K(n,n);
+  K.resize(n,n);
   time start = high_resolution_clock::now();
-  (*kernel).computeCov(K, obsX, params, gradList, jitter, evalGrad);
+  (*kernel).computeCov(K, distMatrix, params, gradList, jitter, evalGrad);
   time end = high_resolution_clock::now();
   time_computecov += getTime(start, end);
 
-
   start = high_resolution_clock::now();
-  auto _cholesky = K.llt();
-  //Eigen::LLT<Matrix> _cholesky(n);
-  //_cholesky = K.llt();
+  cholesky = K.llt();
   end = high_resolution_clock::now();
   time_cholesky_llt += getTime(start, end);
 
-  start = high_resolution_clock::now();
   // Store alpha for DNLML calculation
-  //_alpha.noalias() = cholesky.solve(obsY);
-  Matrix _alpha = _cholesky.solve(obsY);
-  end = high_resolution_clock::now();
-  time_alpha += getTime(start, end);
-  
+  _alpha.noalias() = cholesky.solve(obsY);
+
   // Compute NLML value
   start = high_resolution_clock::now();
-  double NLML_value = (obsY.transpose()*_alpha)(0);
-  NLML_value += n*std::log(2*PI);
-  NLML_value *= 0.5;
-  NLML_value += _cholesky.matrixLLT().diagonal().array().log().sum();
+  double NLML_value = 0.5*(obsY.transpose()*_alpha)(0);
+  NLML_value += static_cast<Matrix>(cholesky.matrixL()).diagonal().array().log().sum();
+  NLML_value += 0.5*n*std::log(2*PI);
   end = high_resolution_clock::now();
   time_NLML += getTime(start, end);
 
@@ -172,58 +157,41 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       // [ THIS APPEARS TO BE A COMPUTATIONAL BOTTLE-NECK ]
       //
 
+      //std::cout << "\nThetas =\t" << std::log(params(0)) << "\t" << std::log(params(1)) << std::endl;
+      //std::cout << "\nDeltas =\t" << std::abs(params(0)-oldN) << "\t" << std::abs(params(0)-oldN)  << std::endl;
+      //oldN = params(0);
+      //oldL = params(1);
       
       start = high_resolution_clock::now();
-      
-      // ORIGINAL
-      //Matrix term(n,n);
-      //term.noalias() = _cholesky.solve(Matrix::Identity(n,n));
-      //term.noalias() -= _alpha*_alpha.transpose();
+      // Direct evaluation of inverse matrix
+      //term.noalias() = cholesky.solve(Matrix::Identity(n,n)) - _alpha*_alpha.transpose();
 
-      // SOLVE IN PLACE
-      //Matrix term = Matrix::Identity(n,n);
-      //_cholesky.solveInPlace(term);
-      //term.noalias() -= _alpha*_alpha.transpose();
 
-      // MULTI-THREADED
-      Matrix term = Matrix::Identity(n,n);
-
-      // Get problem dimension d per thread
-      auto d = static_cast<int>(n/4);
-      auto term1 = term.block(0,0,n,d);
-      auto term2 = term.block(0,d,n,d);
-      auto term3 = term.block(0,2*d,n,d);
-      auto term4 = term.block(0,3*d,n,n-3*d);
-        
-      std::thread thread1([&term1,&_cholesky] {
-                            _cholesky.solveInPlace(term1);
-                          });
-      std::thread thread2([&term2,&_cholesky] {
-                            _cholesky.solveInPlace(term2);
-                          });
-      std::thread thread3([&term3,&_cholesky] {
-                            _cholesky.solveInPlace(term3);
-                          });
-      std::thread thread4([&term4,&_cholesky] {
-                            _cholesky.solveInPlace(term4);
-                          });
-
-      // Join threads
-      thread1.join();
-      thread2.join();
-      thread3.join();
-      thread4.join();
-
-      // Reassemble blocks from solver threads
-      term.block(0,0,n,d) = term1;
-      term.block(0,d,n,d) = term2;
-      term.block(0,2*d,n,d) = term3;
-      term.block(0,3*d,n,n-3*d) = term4;
-
-      // Compute final multiplicative term:  K^-1 - alpha*alpha^T
+      // Try forcing Eigen to solve in place
+      term.noalias() = Matrix::Identity(n,n);
+      cholesky.solveInPlace(term);
       term.noalias() -= _alpha*_alpha.transpose();
 
       
+      /*
+      //
+      //       ---  PARALLEL IMPLEMENTATION  ---
+      //
+      //  [ Typically much slower; possible thread issue... ]
+      //
+      term = Matrix::Identity(n,n);
+      //Matrix ei = Eigen::MatrixXd::Zero(n,1);
+      int i = 0;
+#pragma omp parallel for private(i) shared(cholesky, _alpha, term, n)
+      for ( i=0 ; i<n ; i++ )
+        {
+          term.col(i) = cholesky.solve(term.col(i));
+          term.col(i) -= _alpha(i)*_alpha;
+        }
+      */
+    
+      
+      //term.noalias() -= _alpha*_alpha.transpose();
       end = high_resolution_clock::now();
       time_term += getTime(start, end);
 
@@ -234,22 +202,14 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       if (!fixedNoise)
         {
           // Specify gradient of white noise kernel  [ dK_i = params(0)*Matrix::Identity(n,n) ]
-          //g(index++) = 0.5 * (term * params(0)).trace() ;
-          g(index) = term.trace();
-          g(index++) *= 0.5 * params(0);
+          g(index++) = 0.5 * (term * params(0)).trace() ;
         }
 
       // Compute gradients with respect to kernel hyperparameters
       for (auto dK_i = gradList.begin(); dK_i != gradList.end(); ++dK_i) 
         {
           // Compute trace of full matrix
-          //g(index++) = 0.5 * (term * (*dK_i) ).trace() ;
-
-          // Manually compute trace
-          double trace = 0.0;
-          for ( auto i : boost::irange(0,n) )
-              trace += term.row(i)*(*dK_i).col(i);
-          g(index++) = 0.5*trace;
+          g(index++) = 0.5 * (term * (*dK_i) ).trace() ;
         }
       end = high_resolution_clock::now();
       time_grad += getTime(start, end);
@@ -259,9 +219,6 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
 
     }
 
-  time EVAL_end = high_resolution_clock::now();
-  time_evaluation += getTime(EVAL_start, EVAL_end);
-  
   return NLML_value;
   
 }
@@ -328,6 +285,9 @@ void GP::GaussianProcess::fitModel()
   // Pass noise level to kernel when 'fixedNoise=true'
   if ( fixedNoise )
     (*kernel).setNoise(noiseLevel);
+  
+  // Precompute distance matrix
+  computeDistMat();
 
   // Declare vector for storing gradient calculations
   Vector g(augParamCount);
@@ -378,11 +338,9 @@ void GP::GaussianProcess::fitModel()
   ///* [ This is included in the SciKit Learn model.fit() call as well ]
 
   // Recompute covariance and Cholesky factor
-  auto n = static_cast<int>(obsX.rows());
-  Matrix K(n,n);
-  (*kernel).computeCov(K, obsX, optParams, gradList, jitter, false);
+  (*kernel).computeCov(K, distMatrix, optParams, gradList, jitter, false);
   cholesky = K.llt();
-  alpha.noalias() = cholesky.solve(obsY);
+  _alpha.noalias() = cholesky.solve(obsY);
 
   
   // Assign tuned parameters to model
@@ -396,17 +354,15 @@ void GP::GaussianProcess::fitModel()
 
 
   // DISPLAY TIMING INFORMATION
-  ///*
+  /*
   std::cout << "\n Time Diagnostics |\n";
   std::cout << "------------------\n";
-  std::cout << "computeCov():\t  " << time_computecov/gradientEvals  << std::endl;
-  std::cout << "cholesky.llt():\t  " << time_cholesky_llt/gradientEvals  << std::endl;
-  std::cout << "_alpha term:\t  " << time_alpha/gradientEvals  << std::endl;
-  std::cout << "NLML:\t  \t  " << time_NLML/gradientEvals  << std::endl;
-  std::cout << "Grad term:\t  " << time_term/gradientEvals  << std::endl;
-  std::cout << "Gradient:\t  " << time_grad/gradientEvals  << std::endl;
-  std::cout << "\nEvaluation:\t  " << time_evaluation/gradientEvals  << std::endl;
-  //*/
+  std::cout << "computeCov():\t  " << time_computecov  << std::endl;
+  std::cout << "cholesky.llt():\t  " << time_cholesky_llt  << std::endl;
+  std::cout << "NLML:\t  \t  " << time_NLML  << std::endl;
+  std::cout << "Grad term:\t  " << time_term  << std::endl;
+  std::cout << "Gradient:\t  " << time_grad  << std::endl;
+  */
   
 };
 
@@ -432,8 +388,7 @@ void GP::GaussianProcess::predict()
 
   // Set predictive means/variances and compute negative log marginal likelihood
   Matrix cholMat(cholesky.matrixL());
-  //predMean.noalias() = kstar_and_v.transpose() * _alpha;
-  predMean.noalias() = kstar_and_v.transpose() * alpha;
+  predMean.noalias() = kstar_and_v.transpose() * _alpha;
   cholMat.triangularView<Eigen::Lower>().solveInPlace(kstar_and_v);  // kstar_and_v is now 'v'
   predCov.noalias() = kstarmat - kstar_and_v.transpose() * kstar_and_v;
 

@@ -50,8 +50,8 @@ namespace GP {
     Kernel(Vector p, int c) : kernelParams(p) , paramCount(c) { };
     virtual ~Kernel() = default;
 
-    // Compute the covariance matrix provided input observations and kernel hyperparameters
-    virtual void computeCov(Matrix & K, Matrix & obsX, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad) = 0;
+    // Compute the covariance matrix provided a "distance matrix" consisting of pairwise squared norms between points
+    virtual void computeCov(Matrix & K, Matrix & D, Vector & params, std::vector<Matrix> & gradList, double jitter=0.0, bool evalGrad=false) = 0;
 
     // Compute the (cross-)covariance matrix for specified input vectors X1 and X2
     virtual void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params) = 0;
@@ -82,9 +82,10 @@ namespace GP {
 
     // Constructor
     RBF() : Kernel(Vector(1), 1) { kernelParams(0)=1.0; };
-    
-    // Compute the covariance matrix provided input observations and kernel hyperparameters
-    void computeCov(Matrix & K, Matrix & obsX, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad);
+
+    // Compute the covariance matrix provided a "distance matrix" consisting of pairwise squared norms between points
+    void computeCov(Matrix & K, Matrix & D, Vector & params, std::vector<Matrix> & gradList, double jitter=0.0, bool evalGrad=false);
+
     // Compute the (cross-)covariance matrix for specified input vectors X1 and X2
     void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params);
     
@@ -94,6 +95,9 @@ namespace GP {
     //double evalKernel(Matrix&, Matrix&, Vector&, int);
     double evalDistKernel(double, Vector&, int);
     
+    Matrix Kv;
+    Matrix dK_i;
+    Matrix dK_iv;
   };
 
 
@@ -110,9 +114,6 @@ namespace GP {
     // Constructors  [ Initialize lowerBounds / upperBounds of CppOptLib superclass to zero ]
     GaussianProcess() : Superclass(Vector(0), Vector(0)) { }
 
-    // Copy Constructor
-    GaussianProcess(const GaussianProcess & m) { std::cout << "\n [*] WARNING: copy constructor called by GaussianProcess\n"; }
-    
     // Define CppOptLib methods
     // [ 'value' returns NLML and 'gradient' asigns the associated gradient vector to 'g' ]
     double value(const Vector &p) { return evalNLML(p, cppOptLibgrad, true); }
@@ -141,7 +142,9 @@ namespace GP {
     Matrix getSamples(int count=10);
     Vector getParams() { return (*kernel).getParams(); }
     double getNoise() { return noiseLevel; }
-    
+
+    Matrix getK() { return K; }
+    Matrix getAlpha() { return _alpha; }
 
     // Define method for superclass "GradientObj" used by 'cg_minimize' [only needed when using "./utils/minimize.h"]
     //void computeValueAndGradient(Vector X, double & val, Vector & D) { val = evalNLML(X,D,true); };
@@ -151,6 +154,7 @@ namespace GP {
     // Private member functions
     double evalNLML(const Vector & p); 
     double evalNLML(const Vector & p, Vector & g, bool evalGrad=false);
+    void computeDistMat();
     
     // Status variables  ( still needed ? )
     int N = 0;
@@ -159,7 +163,9 @@ namespace GP {
     Kernel * kernel;
     double noiseLevel = 0.0;
     bool fixedNoise = false;
+    //double jitter = 1e-7;
     double jitter = 1e-10;
+    Matrix K;
 
     // Store Cholsky decomposition
     Eigen::LLT<Matrix> cholesky;
@@ -173,7 +179,8 @@ namespace GP {
     double solverPrecision = 7.5e-5;
       
     // Store squared distance matrix and alpha for NLML/DNLML calculations
-    Matrix alpha;
+    Matrix distMatrix;    
+    Matrix _alpha;
     
     // Observation data
     Matrix obsX; 
@@ -187,7 +194,7 @@ namespace GP {
 
     int paramCount;
     int augParamCount;
-    //Matrix term;
+    Matrix term;
 
     // Need to find a way to avoid creating new gradList each time...
     std::vector<Matrix> gradList;  
@@ -196,12 +203,9 @@ namespace GP {
     ///*
     double time_computecov = 0.0;
     double time_cholesky_llt = 0.0;
-    double time_alpha = 0.0;
     double time_NLML = 0.0;
     double time_term = 0.0;
     double time_grad = 0.0;
-
-    double time_evaluation = 0.0;
     //*/
 
     // Count gradient evaluations by optimizer

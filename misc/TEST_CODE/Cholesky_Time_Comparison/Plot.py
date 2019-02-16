@@ -1,7 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, WhiteKernel
 import csv
 import time
 
@@ -65,10 +63,10 @@ def main():
             trueVals.append(t)
             predMean.append(m)
             predStd.append(v)
-    inVals = np.array(inVals).astype(np.float64)
-    trueVals = np.array(trueVals).astype(np.float64)
-    predMean = np.array(predMean).astype(np.float64)
-    predStd = np.array(predStd).astype(np.float64)
+    inVals = np.array(inVals).astype(np.float32)
+    trueVals = np.array(trueVals).astype(np.float32)
+    predMean = np.array(predMean).astype(np.float32)
+    predStd = np.array(predStd).astype(np.float32)
 
     ## Get observation data
     filename = "observations.csv"
@@ -83,8 +81,8 @@ def main():
                 x, y = row
                 obsX.append(x)
             obsY.append(y)
-    obsX = np.array(obsX).astype(np.float64)
-    obsY = np.array(obsY).astype(np.float64)
+    obsX = np.array(obsX).astype(np.float32)
+    obsY = np.array(obsY).astype(np.float32)
 
 
 
@@ -97,51 +95,12 @@ def main():
             for row in csvreader:
                 vals = np.array(row)
                 samples.append(vals)
-        samples = np.array(samples).astype(np.float64)
+        samples = np.array(samples).astype(np.float32)
     
     
-    ### SCIKIT LEARN IMPLEMENTATION
     X = np.reshape(obsX, [-1, inputDim])
     Y = np.reshape(obsY, [-1])
     Xtest = np.reshape(inVals, [-1, inputDim])
-
-
-    # Model parameters
-    n_restarts = 0
-    normalize_y = False
-    use_white_noise = True
-    RBF_bounds = [0.01, 100.0]
-    Noise_bounds = [0.00001, 10.0]
-    jitter = 1e-7
-
-    # Define kernel for SciKit Learn Gaussian process regression model
-    if use_white_noise:
-        kernel = RBF(length_scale=1.0, length_scale_bounds=(RBF_bounds[0],RBF_bounds[1])) + \
-            WhiteKernel(noise_level=1, noise_level_bounds=(Noise_bounds[0], Noise_bounds[1]))
-    else:
-        kernel = RBF(length_scale=1.0, length_scale_bounds=(RBF_bounds[0],RBF_bounds[1]))
-
-    # Fit model to data
-    start_time = time.time()
-    model = GaussianProcessRegressor(kernel=kernel, alpha=jitter, optimizer='fmin_l_bfgs_b',
-                                     normalize_y=normalize_y, n_restarts_optimizer=n_restarts).fit(X, Y)
-    end_time = time.time()
-
-    # Display computation time 
-    time_elapsed = convert_time(end_time-start_time)
-    print('\nComputation Time:  '  + time_elapsed + '\n') 
-
-    print("Optimized Kernel Parameters:")
-    print(model.kernel_)
-    print(" ")
-    mean, std = model.predict(Xtest, return_std=True)
-
-    if inputDim == 1:
-        model_samples = model.sample_y(Xtest, samples.shape[0])
-
-    NLML = -model.log_marginal_likelihood()
-    print("NLML:   {:.4f}\n".format(NLML))
-
 
 
 
@@ -152,36 +111,20 @@ def main():
     if inputDim == 1:
 
         """ ONE-DIMENSIONAL PLOTS """
-        
-        # Plot Scikit Learn results
-        plt.figure()
-        plt.plot(inVals, mean, 'C0', linewidth=2.0)
-        alpha = 0.075
-        for k in [1,2,3]:
-            plt.fill_between(inVals, mean-k*std, mean+k*std, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
-        plt.plot(inVals, trueVals, 'C1', linewidth=1.0, linestyle="dashed")
-        alpha_scatter = 0.5
-        plt.scatter(obsX, obsY, alpha=alpha_scatter)
-        for i in range(0,model_samples.shape[1]):
-            plt.plot(inVals, model_samples[:,i], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
-        plt.suptitle("Scikit Learn Implementation")
-
 
         ### C++ IMPLEMENTATION
         plt.figure()    
         plt.plot(inVals, predMean, 'C0', linewidth=2.0)
+        alpha = 0.075
         for k in [1,2,3]:
             plt.fill_between(inVals, predMean-k*predStd, predMean+k*predStd, where=1>=0, facecolor="C0", alpha=alpha, interpolate=True)
         plt.plot(inVals, trueVals, 'C1', linewidth=1.0, linestyle="dashed")
+        alpha_scatter = 0.5
         plt.scatter(obsX, obsY, alpha=alpha_scatter)
         for i in range(0,samples.shape[0]):
             plt.plot(inVals, samples[i,:], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
         plt.suptitle("C++ Implementation")    
         plt.show()
-
-
-
-
     
     
     elif inputDim == 2:
@@ -196,7 +139,7 @@ def main():
             plot_Y_flat.append(inVals[n,1])
 
         tri_fig = plt.figure()
-        tri_ax1 = tri_fig.add_subplot(121, projection='3d')
+        tri_ax1 = tri_fig.add_subplot(111, projection='3d')
         linewidth = 0.1
         cmap = "Blues"
 
@@ -205,15 +148,8 @@ def main():
         pred_title = "CppGPs"
         tri_ax1.set_title(pred_title, fontsize=24)
 
-        # Plot SciKit Learn results    
-        tri_ax2 = tri_fig.add_subplot(122, projection='3d')
-        tri_ax2.plot_trisurf(plot_X_flat,plot_Y_flat, mean, cmap=cmap, linewidth=linewidth, antialiased=True)
-        soln_title = "SciKit Learn"
-        tri_ax2.set_title(soln_title, fontsize=24)
-
         # Remove axes from plots
         remove_axes(tri_ax1) 
-        remove_axes(tri_ax2) 
 
         # Bind axes for comparison
         def tri_on_move(event):
@@ -327,3 +263,6 @@ def main():
 # Run main() function when called directly
 if __name__ == '__main__':
     main()
+
+
+

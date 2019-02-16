@@ -128,7 +128,9 @@ BAK*
 
 include/cppoptlib
 include/cppoptlib/*
-#TEST_CODE
-#TEST_CODE/*
-TEST_CODE/include/cppoptlib
-TEST_CODE/include/cppoptlib/*
+misc/TEST_CODE/include/cppoptlib
+misc/TEST_CODE/include/cppoptlib/*
+misc/TEST_CODE/Two_Dimensional/include/cppoptlib
+misc/TEST_CODE/Two_Dimensional/include/cppoptlib/*
+misc/TEST_CODE/Cholesky_Time_Comparison/include/cppoptlib
+misc/TEST_CODE/Cholesky_Time_Comparison/include/cppoptlib/*

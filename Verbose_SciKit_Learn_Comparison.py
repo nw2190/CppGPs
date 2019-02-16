@@ -154,6 +154,17 @@ class GaussianProcessRegressor(BaseEstimator, RegressorMixin):
         self.copy_X_train = copy_X_train
         self.random_state = random_state
 
+        ### DEBUGGING
+        self.time_computecov = 0.0
+        self.time_cholesky_llt = 0.0
+        self.time_alpha = 0.0
+        self.time_NLML = 0.0
+        self.time_term = 0.0
+        self.time_grad = 0.0
+        self.time_evaluation = 0.0
+        
+        
+
     @property
     @deprecated("Attribute rng was deprecated in version 0.19 and "
                 "will be removed in 0.21.")
@@ -380,6 +391,7 @@ class GaussianProcessRegressor(BaseEstimator, RegressorMixin):
         return y_samples
 
     def log_marginal_likelihood(self, theta=None, eval_gradient=False):
+        EVAL_start = time.time()
         """Returns log-marginal likelihood of theta for training data.
         Parameters
         ----------
@@ -409,13 +421,23 @@ class GaussianProcessRegressor(BaseEstimator, RegressorMixin):
         kernel = self.kernel_.clone_with_theta(theta)
 
         if eval_gradient:
+            ### DEBUGGING
+            start = time.time()
             K, K_gradient = kernel(self.X_train_, eval_gradient=True)
+            end = time.time()
+            self.time_computecov += (end - start)
+            
         else:
             K = kernel(self.X_train_)
 
         K[np.diag_indices_from(K)] += self.alpha
         try:
+            ### DEBUGGING
+            start = time.time()
             L = cholesky(K, lower=True)  # Line 2
+            end = time.time()
+            self.time_cholesky_llt += (end - start)
+            
         except np.linalg.LinAlgError:
             return (-np.inf, np.zeros_like(theta)) \
                 if eval_gradient else -np.inf
@@ -425,24 +447,52 @@ class GaussianProcessRegressor(BaseEstimator, RegressorMixin):
         if y_train.ndim == 1:
             y_train = y_train[:, np.newaxis]
 
+        start = time.time()
         alpha = cho_solve((L, True), y_train)  # Line 3
+        end = time.time()
+        self.time_alpha += (end - start)
 
+        ### DEBUGGING
+        start = time.time()
+        
         # Compute log-likelihood (compare line 7)
         log_likelihood_dims = -0.5 * np.einsum("ik,ik->k", y_train, alpha)
         log_likelihood_dims -= np.log(np.diag(L)).sum()
         log_likelihood_dims -= K.shape[0] / 2 * np.log(2 * np.pi)
         log_likelihood = log_likelihood_dims.sum(-1)  # sum over dimensions
 
+        end = time.time()
+        self.time_NLML += (end - start)
+        
+
         if eval_gradient:  # compare Equation 5.9 from GPML
+
+            ### DEBUGGING
+            start = time.time()
+            
             tmp = np.einsum("ik,jk->ijk", alpha, alpha)  # k: output-dimension
             tmp -= cho_solve((L, True), np.eye(K.shape[0]))[:, :, np.newaxis]
+
+            end = time.time()
+            self.time_term += (end - start)
+
             # Compute "0.5 * trace(tmp.dot(K_gradient))" without
             # constructing the full matrix tmp.dot(K_gradient) since only
             # its diagonal is required
+
+            ### DEBUGGING
+            start = time.time()
+
             log_likelihood_gradient_dims = \
                 0.5 * np.einsum("ijl,ijk->kl", tmp, K_gradient)
             log_likelihood_gradient = log_likelihood_gradient_dims.sum(-1)
 
+            end = time.time()
+            self.time_grad += (end - start)
+
+        EVAL_end = time.time()
+        self.time_evaluation += (EVAL_end - EVAL_start)
+            
         if eval_gradient:
             return log_likelihood, log_likelihood_gradient
         else:
@@ -464,11 +514,21 @@ class GaussianProcessRegressor(BaseEstimator, RegressorMixin):
 
             ### DEBUGGING
             print("\n\n[*] Number of iterations:       {}\n".format(convergence_dict["nit"]))
-            print("[*] Number of function calls:  {}\n".format(convergence_dict["funcalls"]))
+            functionCalls = convergence_dict["funcalls"]
+            print("[*] Number of function calls:  {}\n".format(functionCalls))
             #print("[*] Gradient at minimum:       {}\n".format(convergence_dict["grad"]))
             #gradnorm = np.linalg.norm(np.array(convergence_dict["grad"]), ord=np.inf)
             #print("[*] Gradient Norm at minimum:  {}\n".format(gradnorm))
 
+            print("\n Time Diagnostics |")
+            print("------------------\n")
+            print("computeCov():\t {:.5f}".format(self.time_computecov/functionCalls))
+            print("cholesky.llt():\t {:.5f}".format(self.time_cholesky_llt/functionCalls))
+            print("_alpha term:\t {:.5f}".format(self.time_alpha/functionCalls))
+            print("NLML:\t  \t {:.5f}".format(self.time_NLML/functionCalls))
+            print("Grad term:\t {:.5f}".format(self.time_term/functionCalls))
+            print("Gradient:\t {:.5f}".format(self.time_grad/functionCalls))
+            print("\nEvaluation:\t {:.5f}".format(self.time_evaluation/functionCalls))
             
             if convergence_dict["warnflag"] != 0:
                 warnings.warn("fmin_l_bfgs_b terminated abnormally with the "
