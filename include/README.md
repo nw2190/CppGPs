@@ -11,4 +11,4 @@ The `cppoptlib` directory should then be placed here (i.e. `include/cppoptlib`) 
 
 ## Update L-BFGS Code
 
-The original implementation of the L-BFGS algorithm provided by CppOptimizationLibrary must be slightly modified for use with CppGPs.  In particular, the provided `lbfgsbsolver.h` file in this directory should be copied into the `cppoptlib/solvers/` directory (overwriting the orginal `lbfgsbsolver.h` header file).
+The original implementation of the L-BFGS algorithm provided by CppOptimizationLibrary must be slightly modified for use with CppGPs.  In particular, the provided `lbfgsbsolver.h` file in this directory should be copied into the `cppoptlib/solvers/` directory and the `morethuente.h` file in this directory should be copied into the `cppoptlib/linesearch/` (overwriting the orginal files).

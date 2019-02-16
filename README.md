@@ -21,7 +21,7 @@ The `main.cpp` file provides an example use of the CppGP code for Gaussian proce
 
 * Specify the path to the Eigen header files by editing the `EIGENPATH` variable in `makefile`
 * Download the `CppOptimizationLibrary` code as instructed in the `include/README.md` file
-* Replace the `cppoptlib/solvers/lbfgsbsolver.h` header file with the one provided in the `include/` directory
+* Replace the `cppoptlib/solvers/lbfgsbsolver.h` and `cppoptlib/linesearch/morethuente.h` header files with the ones provided in the `include/` directory
 
 Once these steps are completed, the example code can be compiled and run as follows:
 ```console

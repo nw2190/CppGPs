@@ -247,8 +247,7 @@ class LbfgsbSolver : public ISolver<TProblem, 1> {
 
       // MODIFIED
       TVector s = (SubspaceMin-x).eval();
-      //MoreThuente<TProblem, 1>::cvsrch(problem, x, f, g, alpha_init, s);
-      MoreThuente<TProblem, 1>::cvsrch(problem, x, f, g, alpha_init, s, this->m_stop, this->m_current, this->m_status);
+      MoreThuente<TProblem, 1>::cvsrch(problem, x, f, g, alpha_init, s);
       const Scalar rate = alpha_init;
 
       x = x - rate*(x-SubspaceMin);

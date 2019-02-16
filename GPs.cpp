@@ -320,7 +320,9 @@ void GP::GaussianProcess::fitModel()
   cppoptlib::Criteria<double> crit = cppoptlib::Criteria<double>::defaults();
   //crit.iterations = 10; //!< Maximum number of iterations
   crit.gradNorm = 1e-6;   //!< Minimum norm of gradient vector
-  crit.fDelta = 7.5e-5;   //!< Minimum [relative] change in cost function
+  //crit.fDelta = 7.5e-5;   //!< Minimum [relative] change in cost function
+  crit.iterations = solverIterations;
+  crit.fDelta = solverPrecision;
   solver.setStopCriteria(crit);
   solver.setHistorySize(10);
   

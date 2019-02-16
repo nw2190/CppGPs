@@ -126,7 +126,9 @@ namespace GP {
     void setPred(Matrix & px) { predX = px; }
     void setNoise(double noise) { fixedNoise = true; noiseLevel = noise; }
     void setBounds(Vector & lbs, Vector & ubs) { lowerBounds = lbs; upperBounds = ubs; fixedBounds=true; }
-    
+    void setSolverIterations(int i) { solverIterations = i; };
+    void setSolverPrecision(double p) { solverPrecision = p; };
+
     // Compute methods
     void fitModel();
     void predict();
@@ -171,6 +173,8 @@ namespace GP {
     Vector upperBounds;
     bool fixedBounds = false;
     void parseBounds(Vector & lbs, Vector & ubs, int augParamCount);
+    int solverIterations = 1000;
+    double solverPrecision = 7.5e-5;
       
     // Store squared distance matrix and alpha for NLML/DNLML calculations
     Matrix distMatrix;    

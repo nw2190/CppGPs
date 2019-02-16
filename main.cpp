@@ -70,8 +70,8 @@ int main(int argc, char const *argv[])
   //
 
   // Specify the input dimensions
-  int inputDim = 1;
-  //int inputDim = 2;
+  //int inputDim = 1;
+  int inputDim = 2;
   
   // Specify observation data count
   int obsCount;
@@ -125,8 +125,13 @@ int main(int argc, char const *argv[])
   Vector lbs(1);  lbs <<  0.01;
   Vector ubs(1);  ubs <<  100.0;
   model.setBounds(lbs, ubs);
-  
 
+  // Specify solver precision
+  if ( inputDim == 1 )
+    model.setSolverPrecision(7.5e-5);
+  else
+    model.setSolverPrecision(1e-4);
+  
   // Fit covariance kernel hyperparameters to the training data
   time start = high_resolution_clock::now();
   model.fitModel();  
