@@ -36,7 +36,6 @@ void GP::pdist(Matrix & Dv, Matrix & X1, Matrix & X2)
 // Re-assemble pairwise distances into a dense matrix
 void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 {
-
   D.resize(n,n);
 
   int k = 0;
@@ -76,8 +75,6 @@ void GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, std::vector<M
       gradList[0] = dK_i;
     }
 
-  //return gradList;
-  
 };
 
 
@@ -94,29 +91,6 @@ void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & par
       K.col(j) = ((X1.rowwise() - X2.row(j)).rowwise().squaredNorm()).unaryExpr(lambda);          
     }
   
-};
-
-// Define kernel function for RBF
-double GP::RBF::evalKernel(Matrix & x, Matrix & y, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
-    case 1: return (x-y).squaredNorm() / std::pow(params(0),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
-};
-
-// Define distance kernel function for RBF
-// [ Note: Optimize w.r.t. theta = log(l) for stability  ==>   / l^2  instead of  / l^3 ]
-double GP::RBF::evalDistKernel(double d, Vector & params, int n)
-{
-  switch (n)
-    {
-    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
-    case 1: return d / std::pow(params(0),2) * std::exp( -d / (2.0*std::pow(params(0),2)));
-    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
-    }
 };
 
 
@@ -577,6 +551,37 @@ float GP::getTime(std::chrono::high_resolution_clock::time_point start, std::chr
   return static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count() / 1000000.0);
 };
 
+
+
+
+
+
+/*
+//  POSSIBLY UNNEEDED POINTWISE KERNEL DEFINITIONS
+
+// Define kernel function for RBF
+double GP::RBF::evalKernel(Matrix & x, Matrix & y, Vector & params, int n)
+{
+  switch (n)
+    {
+    case 0: return std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
+    case 1: return (x-y).squaredNorm() / std::pow(params(0),3) * std::exp( -(x-y).squaredNorm() / (2.0*std::pow(params(0),2)));
+    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
+    }
+};
+
+// Define distance kernel function for RBF
+// [ Note: Optimize w.r.t. theta = log(l) for stability  ==>   / l^2  instead of  / l^3 ]
+double GP::RBF::evalDistKernel(double d, Vector & params, int n)
+{
+  switch (n)
+    {
+    case 0: return std::exp( -d / (2.0*std::pow(params(0),2)));
+    case 1: return d / std::pow(params(0),2) * std::exp( -d / (2.0*std::pow(params(0),2)));
+    default: std::cout << "\n[*] UNDEFINED DERIVATIVE\n"; return 0.0;
+    }
+};
+*/
 
 
 
