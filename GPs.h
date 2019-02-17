@@ -48,7 +48,7 @@ namespace GP {
     virtual ~Kernel() = default;
 
     // Compute the covariance matrix provided input observations and kernel hyperparameters
-    virtual void computeCov(Matrix & K, Matrix & obsX, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad) = 0;
+    virtual void computeCov(Matrix & K, Matrix & obsX, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad) =0;
 
     // Compute the (cross-)covariance matrix for specified input vectors X1 and X2
     virtual void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params) = 0;
@@ -67,6 +67,7 @@ namespace GP {
     Vector kernelParams;
     int paramCount;
     double noiseLevel;
+    double parseParams(const Vector & params, Vector & kernelParams);
     //virtual double evalKernel(Matrix&, Matrix&, Vector&, int) = 0;
     virtual double evalDistKernel(double, Vector&, int) = 0;
   };

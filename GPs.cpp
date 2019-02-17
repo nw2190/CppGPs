@@ -106,39 +106,47 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 }
 
 
+// Parse kernel parameter vector, separating noise from the kernel hyperparameters
+double GP::Kernel::parseParams(const Vector & params, Vector & kernelParams)
+{
+  if ( params.size() > paramCount )
+    {
+      double noise = params(0);
+      kernelParams = params.tail(paramCount);
+      return noise;
+    }
+  else
+    {
+      kernelParams = params;
+      return noiseLevel;
+    }
+}
+
 // Compute covariance matrix (and gradients) from a vector of squared pairwise distances Dv
 void GP::RBF::computeCov(Matrix & K, Matrix & obsX, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad)
 {
   auto n = static_cast<int>(K.rows());
 
+  // Separate noise from kernel hyperparameters
+  Vector kernelParams;
+  double noise = parseParams(params, kernelParams);
+  
   // Compute distance matrix for each call
   Matrix Dv;
   pdist(Dv, obsX, obsX);
-  
-  Matrix Kv;
-  
-  int lengthIndex;
-  if ( params.size() > paramCount )
-    {
-      Kv.noalias() = ( (-0.5 / std::pow(params(1),2)) * Dv ).array().exp().matrix();
-      squareForm(K, Kv, n, 1.0 + params(0) + jitter);
-      lengthIndex = 1;
-    }
-  else
-    {
-      Kv.noalias() = ( (-0.5 / std::pow(params(0),2)) * Dv ).array().exp().matrix();
-      squareForm(K, Kv, n, 1.0 + noiseLevel + jitter);
-      lengthIndex = 0;
-    }
 
-  // Compute gradient list if "evalGrad=true"
+  // Evaluate covariance kernel on pairwise distance vector
+  Matrix Kv;
+  Kv.noalias() = ( (-0.5 / std::pow(kernelParams(0),2)) * Dv ).array().exp().matrix();
+  squareForm(K, Kv, n, 1.0 + noise + jitter);
+
+  // Compute gradients w.r.t. kernel hyperparameters
   if ( evalGrad )
     {
       Matrix dK_i;
       Matrix dK_iv;
-      dK_iv.noalias() = 1/std::pow(params(lengthIndex),2) * ( Dv.array() * Kv.array() ).matrix();
+      dK_iv.noalias() = 1/std::pow(kernelParams(0),2) * ( Dv.array() * Kv.array() ).matrix();
       squareForm(dK_i, dK_iv, n); // Note: diagVal = 0.0
-      //gradList[0] = dK_i;
       gradList[0] = dK_i.eval();
     }
 
@@ -465,8 +473,8 @@ void GP::GaussianProcess::fitModel()
   LBFGSpp::LBFGSSolver<double> finalsolver(finalparam);
   niter = finalsolver.minimize(*this, optParams, optVal);
 
-  std::cout << "\n[*] Solver Iterations =\t" << niter <<std::endl;
-  std::cout << "\n[*] Function Evaluations =\t" << gradientEvals <<std::endl;
+  std::cout << "\n[*] Solver Iterations = " << niter <<std::endl;
+  std::cout << "\n[*] Function Evaluations = " << gradientEvals <<std::endl;
   
   // ASSUME OPTIMIZATION OVER LOG VALUES
   optParams = optParams.array().exp().matrix();

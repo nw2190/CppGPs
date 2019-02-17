@@ -21,8 +21,9 @@ Implementation of Numerical Gaussian Processes in C++
 The `main.cpp` file provides an example use of the CppGP code for Gaussian process regression.  Before compilation, the following steps must be carried out:
 
 * Specify the path to the Eigen header files by editing the `EIGENPATH` variable in `makefile`
-* Download the `CppOptimizationLibrary` code as instructed in the `include/README.md` file
-* Replace the `cppoptlib/solvers/lbfgsbsolver.h` and `cppoptlib/linesearch/morethuente.h` header files with the ones provided in the `include/` directory
+* Download the `LBFGS++` code as instructed in the `include/README.md` file
+<!---* Download the `CppOptimizationLibrary` code as instructed in the `include/README.md` file
+* Replace the `cppoptlib/solvers/lbfgsbsolver.h` and `cppoptlib/linesearch/morethuente.h` header files with the ones provided in the `include/` directory --->
 
 Once these steps are completed, the example code can be compiled and run as follows:
 ```console
