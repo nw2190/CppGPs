@@ -7,10 +7,11 @@
 #include <cmath>
 #include <Eigen/Dense>
 
+#include "./include/LBFGS++/LBFGS.h"
 // Include CppOptLib files
-#include "./include/cppoptlib/meta.h"
-#include "./include/cppoptlib/boundedproblem.h"
-#include "./include/cppoptlib/solver/lbfgsbsolver.h"
+//#include "./include/cppoptlib/meta.h"
+//#include "./include/cppoptlib/boundedproblem.h"
+//#include "./include/cppoptlib/solver/lbfgsbsolver.h"
 
 
 // Declare namespace for Gaussian process definitions
@@ -100,25 +101,28 @@ namespace GP {
 
   
   // Define class for Gaussian processes
-  class GaussianProcess : public cppoptlib::BoundedProblem<double>
+  class GaussianProcess //: public cppoptlib::BoundedProblem<double>
   {    
   public:
 
     // Define alias for base class CppOptLib "BoundedProblem" for use in initialization list
-    using Superclass = cppoptlib::BoundedProblem<double>;
+    //using Superclass = cppoptlib::BoundedProblem<double>;
     
     // Constructors  [ Initialize lowerBounds / upperBounds of CppOptLib superclass to zero ]
-    GaussianProcess() : Superclass(Vector(0), Vector(0)) { }
+    //GaussianProcess() : Superclass(Vector(0), Vector(0)) { }
+    GaussianProcess() { }
 
     // Copy Constructor
     GaussianProcess(const GaussianProcess & m) { std::cout << "\n [*] WARNING: copy constructor called by GaussianProcess\n"; }
     
     // Define CppOptLib methods
     // [ 'value' returns NLML and 'gradient' asigns the associated gradient vector to 'g' ]
-    double value(const Vector &p) { return evalNLML(p, cppOptLibgrad, true); }
-    void gradient(const Vector &p, Vector &g) { g = cppOptLibgrad; }
-    Vector cppOptLibgrad;
+    //double value(const Vector &p) { return evalNLML(p, cppOptLibgrad, true); }
+    //void gradient(const Vector &p, Vector &g) { g = cppOptLibgrad; }
+    //Vector cppOptLibgrad;
 
+    double operator()(const Eigen::VectorXd& p, Eigen::VectorXd& g) { return evalNLML(p, g, true); }
+    
     // Set methods
     void setObs(Matrix & x, Matrix & y) { obsX = x; obsY = y; } 
     void setKernel(Kernel & k) { kernel = &k; }

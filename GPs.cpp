@@ -11,9 +11,9 @@
 #include "GPs.h"
 
 // Include CppOptLib files
-#include "./include/cppoptlib/meta.h"
-#include "./include/cppoptlib/boundedproblem.h"
-#include "./include/cppoptlib/solver/lbfgsbsolver.h"
+//#include "./include/cppoptlib/meta.h"
+//#include "./include/cppoptlib/boundedproblem.h"
+//#include "./include/cppoptlib/solver/lbfgsbsolver.h"
 
 // Retrieve aliases from GP namescope
 using Matrix = GP::Matrix;
@@ -437,7 +437,6 @@ void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCo
 
 }
 
-
 // Fit model hyperparameters
 void GP::GaussianProcess::fitModel()
 {
@@ -462,14 +461,15 @@ void GP::GaussianProcess::fitModel()
     }
 
   // Initialize gradient vector size
-  cppOptLibgrad.resize(augParamCount);
+  //cppOptLibgrad.resize(augParamCount);
 
   // Convert hyperparameter bounds to log-scale
   Vector lbs, ubs;
   parseBounds(lbs, ubs, augParamCount);
 
   Vector optParams = Eigen::MatrixXd::Zero(augParamCount,1);
-  
+
+  /*
   this->setLowerBound(lbs);
   this->setUpperBound(ubs);
   cppoptlib::LbfgsbSolver<GaussianProcess> solver;
@@ -486,12 +486,29 @@ void GP::GaussianProcess::fitModel()
   
   solver.minimize(*this, optParams);
 
+  */
+
   // Display final solver criteria values
-  ///*
+  /*
   std::cout << "\nSolver Criteria |";
   std::cout << "\n----------------\n" << solver.criteria() << std::endl;
   std::cout << "gradEvals =\t" << gradientEvals <<std::endl;
-  //*/
+  */
+
+  LBFGSpp::LBFGSParam<double> param;
+  param.epsilon = 1e-6;
+  param.max_iterations = 100;
+  param.delta = solverPrecision;
+  param.max_linesearch = 5;
+  param.ftol = 1e-2;
+
+  // Create solver and function object
+  LBFGSpp::LBFGSSolver<double> solver(param);
+  double fx;
+  int niter = solver.minimize(*this, optParams, fx);
+
+  std::cout << "\n[*] Solver Iterations =\t" << niter <<std::endl;
+  std::cout << "\n[*] Function Evaluations =\t" << gradientEvals <<std::endl;
   
   // ASSUME OPTIMIZATION OVER LOG VALUES
   optParams = optParams.array().exp().matrix();

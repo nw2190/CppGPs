@@ -128,6 +128,8 @@ BAK*
 
 include/cppoptlib
 include/cppoptlib/*
+include/CppOptLib/cppoptlib
+include/CppOptLib/cppoptlib/*
 misc/TEST_CODE/include/cppoptlib
 misc/TEST_CODE/include/cppoptlib/*
 misc/TEST_CODE/Two_Dimensional/include/cppoptlib
@@ -135,3 +137,6 @@ misc/TEST_CODE/Two_Dimensional/include/cppoptlib/*
 misc/TEST_CODE/Cholesky_Time_Comparison/include/cppoptlib
 misc/TEST_CODE/Cholesky_Time_Comparison/include/cppoptlib/*
 vgcore.*
+
+include/LBFGS++/*
+include/LBFGS++/LBFGS

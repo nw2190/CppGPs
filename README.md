@@ -4,7 +4,8 @@ Implementation of Numerical Gaussian Processes in C++
 ## Dependencies
 * [Eigen](https://eigen.tuxfamily.org/dox/GettingStarted.html) - High-level C++ library for linear algebra, matrix operations, and solvers (version 3.3.7)
 * [GCC](https://gcc.gnu.org/) - GNU compiler collection; more specifically the GCC C++ compiler is recommended
-* [CppOptimizationLibrary](https://github.com/PatWie/CppNumericalSolvers) - A header-only optimization library with an L-BFGS implementation in C++
+* [LBFGS++](https://github.com/yixuan/LBFGSpp) - A header-only implementation of the L-BFGS algorithm in C++
+* [CppOptimizationLibrary](https://github.com/PatWie/CppNumericalSolvers) - A header-only optimization library 
 
 ### Optional Dependencies for Plotting / SciKit Learn Comparison
 * [NumPy](http://www.numpy.org/) - Scientific computing package for Python
@@ -179,6 +180,8 @@ As can be seen from the figure, the majority of the computational demand of the 
 __Gaussian Processes for Machine Learning__ is an extremely useful reference written by Carl Rasmussen and Christopher Williams; the book has also been made freely available on the [book webpage](http://www.gaussianprocess.org/gpml/).
 
 __Eigen__ provides a header-only library for linear algebra, matrix operations, and solving linear systems.  The [Getting Started](https://eigen.tuxfamily.org/dox/GettingStarted.html) page of the Eigen documentation provides a basic introduction to the library.
+
+__LBFGS++__ is a header-only C++ implementation of the limited-memory BFGS algorithm (L-BFGS) for unconstrained minimization written by Yixuan Qiu.  It is based off of the libLBFGS C library developed by Naoaki Okazaki and also includes a detailed [API](http://yixuan.cos.name/LBFGSpp/doc/index.html).
 
 __CppOptimizationLibrary__ is an extensive header-only library written by Patrick Wieschollek with C++ implementations for a diverse collection of optimization algorithms; the library is availble in the GitHub repository [PatWie/CppNumericalSolvers](https://github.com/PatWie/CppNumericalSolvers).
 
