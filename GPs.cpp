@@ -250,14 +250,13 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
           //g(index++) = 0.5 * (term * (*dK_i) ).trace() ;
 
           // Manually compute trace
-          /*
           double trace = 0.0;
           for ( auto i : boost::irange(0,n) )
               trace += term.row(i)*(*dK_i).col(i);
           g(index++) = 0.5*trace;
-          */
 
-
+          /*
+          // POSSIBLE MULTI-THREADED IMPLEMENTATION
           // Construct zero initialized vector of partial trace values
           Matrix traceVals = Eigen::MatrixXd::Zero(threadCount,1);
 
@@ -289,6 +288,7 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
 
           // Compute final trace value for derivative calculation
           g(index++) = 0.5*(traceVals.sum());
+          */
           
         }
       //end = high_resolution_clock::now();
