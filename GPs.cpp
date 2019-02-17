@@ -444,12 +444,19 @@ void GP::GaussianProcess::fitModel()
   //param.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_WOLFE;
   //finalparam.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE;
   //finalparam.m = 10;
-  finalparam.epsilon = 1e-6;
-  finalparam.max_iterations = 100;
   //finalparam.past = 1;
   //finalparam.delta = solverPrecision;
-  finalparam.max_linesearch = 20;
   //finalparam.ftol = 1e-4;
+  
+  //finalparam.epsilon = 1e-6;
+  //finalparam.max_iterations = 100;
+  //finalparam.max_linesearch = 20;
+
+  // TRY MODELLING SCIPY fmin_l_bfgs_b PARAMETERS
+  finalparam.m = 10;
+  finalparam.epsilon = 1e-5;
+  finalparam.max_linesearch = 20;
+  finalparam.ftol = 1e-20;
 
   // Create solver and function object
   LBFGSpp::LBFGSSolver<double> finalsolver(finalparam);
