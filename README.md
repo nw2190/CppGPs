@@ -172,7 +172,7 @@ An example graph generated using the procedures outlined above is provided below
   <img width="90%" alt="Example profilier graph" src="misc/profilier_output.png" style="margin: auto;">
 </p>
 
-As can be seen from the figure, the majority of the computational demand of the CppGPs implementation results from the  `Eigen::LLT::solveInPlace` method.  This corresponds to the term `cholesky.solve(Matrix::Identity(n,n))` in the `evalNLML()` function definition, which is used to compute the gradients of the NLML with respect to the hyperparameters.  A preliminary parallelized implementation has been included in the comments, however this naive attempt at concurency currently results in even slower evaluation times (but achieves close to 100% CPU usage at least...).
+As can be seen from the figure, the majority of the computational demand of the CppGPs implementation results from the  `Eigen::LLT::solveInPlace` method.  This corresponds to the term `cholesky.solve(Matrix::Identity(n,n))` in the `evalNLML()` function definition, which is used to compute the gradients of the NLML with respect to the hyperparameters.  A simple multi-threaded implementation of this calculation has been incorporated into the code to achieve a considerable speed-up in the execution time.
 
 
 ## References

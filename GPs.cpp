@@ -175,51 +175,55 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       
       //start = high_resolution_clock::now();
       
-      // ORIGINAL
+      // Direct Implementation
       //Matrix term(n,n);
       //term.noalias() = _cholesky.solve(Matrix::Identity(n,n));
       //term.noalias() -= _alpha*_alpha.transpose();
 
-      // SOLVE IN PLACE
+      // Using Solve In Place
       //Matrix term = Matrix::Identity(n,n);
       //_cholesky.solveInPlace(term);
       //term.noalias() -= _alpha*_alpha.transpose();
 
-      // MULTI-THREADED
+      
+      //
+      //  MULTI-THREADED IMPLEMENTATION
+      //
       Matrix term = Matrix::Identity(n,n);
 
+      // Get thread count
+      int threadCount = Eigen::nbThreads( );
+      
       // Get problem dimension d per thread
-      auto d = static_cast<int>(n/4);
-      auto term1 = term.block(0,0,n,d);
-      auto term2 = term.block(0,d,n,d);
-      auto term3 = term.block(0,2*d,n,d);
-      auto term4 = term.block(0,3*d,n,n-3*d);
-        
-      std::thread thread1([&term1,&_cholesky] {
-                            _cholesky.solveInPlace(term1);
-                          });
-      std::thread thread2([&term2,&_cholesky] {
-                            _cholesky.solveInPlace(term2);
-                          });
-      std::thread thread3([&term3,&_cholesky] {
-                            _cholesky.solveInPlace(term3);
-                          });
-      std::thread thread4([&term4,&_cholesky] {
-                            _cholesky.solveInPlace(term4);
-                          });
+      auto d = static_cast<int>(n/threadCount);
+
+      // Construct partitioned list of block terms for solver
+      std::vector<Matrix> termList;      
+      for ( auto i : boost::irange(0,threadCount-1) )
+        termList.emplace_back(term.block(0,i*d,n,d));
+
+      // Ensure the final block extends to column n (i.e. account for index roundoff)
+      termList.emplace_back(term.block(0, (threadCount-1)*d, n, n - (threadCount-1)*d) );
+
+      // Define lambda function specifying each threads solver task
+      auto lambda = [&termList,&_cholesky](int i) { _cholesky.solveInPlace(termList[i]); };
+
+      // Initialize thread list
+      std::vector<std::thread> threadList;
+
+      // Assign tasks to threads
+      for ( auto i : boost::irange(0,threadCount) )
+        threadList.emplace_back(lambda,i);
 
       // Join threads
-      thread1.join();
-      thread2.join();
-      thread3.join();
-      thread4.join();
+      for ( auto & thread : threadList )
+        thread.join();
 
-      // Reassemble blocks from solver threads
-      term.block(0,0,n,d) = term1;
-      term.block(0,d,n,d) = term2;
-      term.block(0,2*d,n,d) = term3;
-      term.block(0,3*d,n,n-3*d) = term4;
-
+      // Reassemble blocks from solver threads back into original matrix
+      for ( auto i : boost::irange(0,threadCount-1) )
+        term.block(0,i*d,n,d) = termList[i];
+      term.block(0, (threadCount-1)*d, n, n - (threadCount-1)*d) = termList[threadCount-1];
+      
       // Compute final multiplicative term:  K^-1 - alpha*alpha^T
       term.noalias() -= _alpha*_alpha.transpose();
 

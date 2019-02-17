@@ -10,6 +10,7 @@ EIGENPATH=/usr/include/eigen3
 
 ### GCC OPTIMIZED
 FLAGS=-std=c++17 -I${EIGENPATH} -DNDEBUG -march=native -fopenmp -O3
+#FLAGS=-std=c++17 -I${EIGENPATH} -g -march=native -fopenmp -O3
 
 ### ALTERNATE
 #FLAGS=-std=c++17 -I${EIGENPATH} -g -floop-parallelize-all -ftree-parallelize-loops=4 -march=native -fopenmp -O3
