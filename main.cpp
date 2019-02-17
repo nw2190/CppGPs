@@ -93,7 +93,7 @@ int main(int argc, char const *argv[])
   if ( inputDim == 1 )
     obsCount = 250;
   else
-    obsCount = 2500;
+    obsCount = 3000;
     
   // Specify observation noise level
   auto noiseLevel = 1.0;

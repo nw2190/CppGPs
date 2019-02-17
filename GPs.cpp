@@ -219,9 +219,9 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
 
 
   start = high_resolution_clock::now();
-  auto _cholesky = K.llt();
-  //Eigen::LLT<Matrix> _cholesky(n);
-  //_cholesky = K.llt();
+  //auto _cholesky = K.llt();
+  Eigen::LLT<Matrix> _cholesky(n);
+  _cholesky = K.llt();
   end = high_resolution_clock::now();
   time_cholesky_llt += getTime(start, end);
 
