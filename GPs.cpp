@@ -456,7 +456,10 @@ void GP::GaussianProcess::fitModel()
   finalparam.m = 10;
   finalparam.epsilon = 1e-5;
   finalparam.max_linesearch = 20;
-  finalparam.ftol = 1e-20;
+  double eps = 2.220446049250313e-16;
+  double factr = 1e7;
+  finalparam.past = 1;
+  finalparam.ftol = factr*eps;
 
   // Create solver and function object
   LBFGSpp::LBFGSSolver<double> finalsolver(finalparam);
