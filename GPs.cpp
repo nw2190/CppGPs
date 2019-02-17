@@ -24,14 +24,53 @@ using Vector = GP::Vector;
 void GP::pdist(Matrix & Dv, Matrix & X1, Matrix & X2)
 {
   auto n = static_cast<int>(X1.rows());
-  int k = 0;
+  //int k = 0;
   auto entryCount = static_cast<int>( (n*(n-1))/2);
   Dv.resize(entryCount, 1);
+  /*
   for ( auto i : boost::irange(0,n-1) )
     {      
       for ( auto j : boost::irange(i+1,n) )
           Dv(k++) = (static_cast<Vector>(X1.row(i) - X2.row(j))).squaredNorm();
     }
+  */
+
+  // Get thread count
+  int threadCount = Eigen::nbThreads( );
+      
+  // Get problem dimension d per thread
+  auto d = static_cast<int>(n/threadCount);
+  
+  std::vector<int> startVals;
+  for ( auto i : boost::irange(0,threadCount) )
+    startVals.emplace_back(i*d);
+
+  std::vector<int> endVals;
+  for ( auto i : boost::irange(1,threadCount) )
+    endVals.emplace_back(i*d);
+  endVals.emplace_back(n-1);
+
+  // Define lambda function specifying each threads solver task
+  auto lambda = [&Dv,&X1,&X2,n](int startInd, int endInd) {
+                  for ( auto i : boost::irange(startInd, endInd) )
+                    {      
+                      for ( auto j : boost::irange(i+1,n) )
+                        Dv(static_cast<int>(i*n-(i*(i+1))/2+j-i-1), 0) = (static_cast<Vector>(X1.row(i)-X2.row(j))).squaredNorm();
+                    }
+                };
+
+  // Initialize thread list
+  std::vector<std::thread> threadList;
+
+  // Assign tasks to threads
+  for ( auto i : boost::irange(0,threadCount) )
+    threadList.emplace_back(lambda,startVals[i],endVals[i]);
+
+  // Join threads
+  for ( auto & thread : threadList )
+    thread.join();
+
+  
 }
 
 // Re-assemble pairwise distances into a dense matrix
@@ -39,13 +78,53 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 {
   D.resize(n,n);
 
+  /*
   int k = 0;
   for ( auto i : boost::irange(0,n-1) )
     {
       for ( auto j : boost::irange(i+1,n) )
         D(i,j) = D(j,i) = Dv(k++,0);
     }
+  */
 
+  ///*
+  // Get thread count
+  int threadCount = Eigen::nbThreads( );
+      
+  // Get problem dimension d per thread
+  auto d = static_cast<int>(n/threadCount);
+  
+  std::vector<int> startVals;
+  for ( auto i : boost::irange(0,threadCount) )
+    startVals.emplace_back(i*d);
+
+  std::vector<int> endVals;
+  for ( auto i : boost::irange(1,threadCount) )
+    endVals.emplace_back(i*d);
+  endVals.emplace_back(n-1);
+
+  // Define lambda function specifying each threads solver task
+  auto lambda = [&D,&Dv,n](int startInd, int endInd) {
+                  for ( auto i : boost::irange(startInd,endInd) )
+                    {
+                      for ( auto j : boost::irange(i+1, n) )
+                        D(i,j) = D(j,i) = Dv(static_cast<int>(i*n-(i*(i+1))/2+j-i-1), 0);
+                    }
+                };
+
+  // Initialize thread list
+  std::vector<std::thread> threadList;
+
+  // Assign tasks to threads
+  for ( auto i : boost::irange(0,threadCount) )
+    threadList.emplace_back(lambda,startVals[i],endVals[i]);
+
+  // Join threads
+  for ( auto & thread : threadList )
+    thread.join();
+  //*/
+  
+  // Add diagonal values to distance matrix
   D.diagonal() = diagVal * Eigen::MatrixXd::Ones(n,1);
 }
 
@@ -408,11 +487,11 @@ void GP::GaussianProcess::fitModel()
   solver.minimize(*this, optParams);
 
   // Display final solver criteria values
-  /*
+  ///*
   std::cout << "\nSolver Criteria |";
   std::cout << "\n----------------\n" << solver.criteria() << std::endl;
   std::cout << "gradEvals =\t" << gradientEvals <<std::endl;
-  */
+  //*/
   
   // ASSUME OPTIMIZATION OVER LOG VALUES
   optParams = optParams.array().exp().matrix();
