@@ -9,6 +9,6 @@ user@host $ git clone git@github.com:yixuan/LBFGSpp.git
 The contents of the LBFGS++ library's `include/` directory should then be moved to the CppGPs `include/LBFGS++/` directory:
 
 ```console
-user@host $ cp -r LBFGSpp/include/* ./include/LBFGS++/
+user@host $ mkdir LBFGS++; cp -r LBFGSpp/include/* ./LBFGS++/
 ```
 

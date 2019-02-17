@@ -10,11 +10,6 @@
 #include <Eigen/Dense>
 #include "GPs.h"
 
-// Include CppOptLib files
-//#include "./include/cppoptlib/meta.h"
-//#include "./include/cppoptlib/boundedproblem.h"
-//#include "./include/cppoptlib/solver/lbfgsbsolver.h"
-
 // Retrieve aliases from GP namescope
 using Matrix = GP::Matrix;
 using Vector = GP::Vector;
@@ -24,16 +19,8 @@ using Vector = GP::Vector;
 void GP::pdist(Matrix & Dv, Matrix & X1, Matrix & X2)
 {
   auto n = static_cast<int>(X1.rows());
-  //int k = 0;
   auto entryCount = static_cast<int>( (n*(n-1))/2);
   Dv.resize(entryCount, 1);
-  /*
-  for ( auto i : boost::irange(0,n-1) )
-    {      
-      for ( auto j : boost::irange(i+1,n) )
-          Dv(k++) = (static_cast<Vector>(X1.row(i) - X2.row(j))).squaredNorm();
-    }
-  */
 
   // Get thread count
   int threadCount = Eigen::nbThreads( );
@@ -78,16 +65,6 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 {
   D.resize(n,n);
 
-  /*
-  int k = 0;
-  for ( auto i : boost::irange(0,n-1) )
-    {
-      for ( auto j : boost::irange(i+1,n) )
-        D(i,j) = D(j,i) = Dv(k++,0);
-    }
-  */
-
-  ///*
   // Get thread count
   int threadCount = Eigen::nbThreads( );
       
@@ -122,7 +99,7 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
   // Join threads
   for ( auto & thread : threadList )
     thread.join();
-  //*/
+
   
   // Add diagonal values to distance matrix
   D.diagonal() = diagVal * Eigen::MatrixXd::Ones(n,1);
@@ -130,7 +107,6 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 
 
 // Compute covariance matrix (and gradients) from a vector of squared pairwise distances Dv
-//void GP::RBF::computeCov(Matrix & K, Matrix & Dv, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad)
 void GP::RBF::computeCov(Matrix & K, Matrix & obsX, Vector & params, std::vector<Matrix> & gradList, double jitter, bool evalGrad)
 {
   auto n = static_cast<int>(K.rows());
@@ -219,15 +195,12 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
 
 
   start = high_resolution_clock::now();
-  //auto _cholesky = K.llt();
   Eigen::LLT<Matrix> _cholesky(n);
   _cholesky = K.llt();
   end = high_resolution_clock::now();
   time_cholesky_llt += getTime(start, end);
 
   start = high_resolution_clock::now();
-  // Store alpha for DNLML calculation
-  //_alpha.noalias() = cholesky.solve(obsY);
   Matrix _alpha = _cholesky.solve(obsY);
   end = high_resolution_clock::now();
   time_alpha += getTime(start, end);
@@ -328,15 +301,6 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
           // Compute trace of full matrix
           //g(index++) = 0.5 * (term * (*dK_i) ).trace() ;
 
-          // Manually compute trace
-          /*
-          double trace = 0.0;
-          for ( auto i : boost::irange(0,n) )
-              trace += term.row(i)*(*dK_i).col(i);
-          g(index++) = 0.5*trace;
-          */
-
-          ///*
           // POSSIBLE MULTI-THREADED IMPLEMENTATION
           // Construct zero initialized vector of partial trace values
           Matrix traceVals = Eigen::MatrixXd::Zero(threadCount,1);
@@ -369,7 +333,6 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
 
           // Compute final trace value for derivative calculation
           g(index++) = 0.5*(traceVals.sum());
-          //*/
           
         }
       end = high_resolution_clock::now();
@@ -396,47 +359,6 @@ double GP::GaussianProcess::evalNLML(const Vector & p)
 }
 
 
-// Define utility function for formatting hyperparameter bounds
-void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCount)
-{
-  lbs.resize(augParamCount);
-  ubs.resize(augParamCount);
-
-  double defaultLowerBound = 0.00001;
-  double defaultUpperBound = 20.0;
-  
-  if ( fixedBounds )
-    {
-      // Check if bounds for noise parameter were provided
-      if ( lowerBounds.size() < augParamCount )
-        {
-          // Set noise bounds to defaults
-          lbs(0) = std::log( defaultLowerBound );
-          ubs(0) = std::log( defaultUpperBound );
-
-          // Convert specified bounds to log-scale
-          for ( auto bi : boost::irange(1,augParamCount) )
-            {
-              lbs(bi) = std::log(lowerBounds(bi-1));
-              ubs(bi) = std::log(upperBounds(bi-1));
-            }
-        }
-      else
-        {
-          // Convert specified bounds to log-scale
-          lbs = (lowerBounds.array().log()).matrix();
-          ubs = (upperBounds.array().log()).matrix();
-        }
-    }
-  else
-    {
-      // Set noise and hyperparameter bounds to defaults
-      lbs = ( defaultLowerBound * Eigen::MatrixXd::Ones(augParamCount,1) ).array().log().matrix();
-      ubs = ( defaultUpperBound * Eigen::MatrixXd::Ones(augParamCount,1) ).array().log().matrix();
-    }
-
-}
-
 // Fit model hyperparameters
 void GP::GaussianProcess::fitModel()
 {
@@ -460,8 +382,6 @@ void GP::GaussianProcess::fitModel()
       gradList.push_back(Matrix::Identity(static_cast<int>(obsY.size()),static_cast<int>(obsY.size())));
     }
 
-  // Initialize gradient vector size
-  //cppOptLibgrad.resize(augParamCount);
 
   // Convert hyperparameter bounds to log-scale
   Vector lbs, ubs;
@@ -469,31 +389,6 @@ void GP::GaussianProcess::fitModel()
 
   Vector optParams = Eigen::MatrixXd::Zero(augParamCount,1);
 
-  /*
-  this->setLowerBound(lbs);
-  this->setUpperBound(ubs);
-  cppoptlib::LbfgsbSolver<GaussianProcess> solver;
-
-  // Specify stopping criteria
-  cppoptlib::Criteria<double> crit = cppoptlib::Criteria<double>::defaults();
-  //crit.iterations = 10; //!< Maximum number of iterations
-  crit.gradNorm = 1e-6;   //!< Minimum norm of gradient vector
-  //crit.fDelta = 7.5e-5;   //!< Minimum [relative] change in cost function
-  crit.iterations = solverIterations;
-  crit.fDelta = solverPrecision;
-  solver.setStopCriteria(crit);
-  solver.setHistorySize(10);
-  
-  solver.minimize(*this, optParams);
-
-  */
-
-  // Display final solver criteria values
-  /*
-  std::cout << "\nSolver Criteria |";
-  std::cout << "\n----------------\n" << solver.criteria() << std::endl;
-  std::cout << "gradEvals =\t" << gradientEvals <<std::endl;
-  */
 
   LBFGSpp::LBFGSParam<double> param;
   param.epsilon = 1e-6;
@@ -749,6 +644,48 @@ float GP::getTime(std::chrono::high_resolution_clock::time_point start, std::chr
 
 
 
+// Define utility function for formatting hyperparameter bounds
+void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCount)
+{
+  lbs.resize(augParamCount);
+  ubs.resize(augParamCount);
+
+  double defaultLowerBound = 0.00001;
+  double defaultUpperBound = 20.0;
+  
+  if ( fixedBounds )
+    {
+      // Check if bounds for noise parameter were provided
+      if ( lowerBounds.size() < augParamCount )
+        {
+          // Set noise bounds to defaults
+          lbs(0) = std::log( defaultLowerBound );
+          ubs(0) = std::log( defaultUpperBound );
+
+          // Convert specified bounds to log-scale
+          for ( auto bi : boost::irange(1,augParamCount) )
+            {
+              lbs(bi) = std::log(lowerBounds(bi-1));
+              ubs(bi) = std::log(upperBounds(bi-1));
+            }
+        }
+      else
+        {
+          // Convert specified bounds to log-scale
+          lbs = (lowerBounds.array().log()).matrix();
+          ubs = (upperBounds.array().log()).matrix();
+        }
+    }
+  else
+    {
+      // Set noise and hyperparameter bounds to defaults
+      lbs = ( defaultLowerBound * Eigen::MatrixXd::Ones(augParamCount,1) ).array().log().matrix();
+      ubs = ( defaultUpperBound * Eigen::MatrixXd::Ones(augParamCount,1) ).array().log().matrix();
+    }
+
+}
+
+
 
 
 /*
@@ -791,6 +728,49 @@ void GP::squareFormParallel(Matrix & D, Matrix & Dv, int n, double diagVal)
   D.diagonal() = diagVal * Eigen::MatrixXd::Ones(n,1);
 }
 */
+
+
+
+
+
+
+//
+//   SECOND MINIMIZATION IMPLEMENTATION USING CPPOPTLIB
+//
+
+// Fit model hyperparameters
+//void GP::GaussianProcess::fitModel()
+
+// Initialize gradient vector size
+//cppOptLibgrad.resize(augParamCount);
+
+/*
+this->setLowerBound(lbs);
+this->setUpperBound(ubs);
+cppoptlib::LbfgsbSolver<GaussianProcess> solver;
+
+// Specify stopping criteria
+cppoptlib::Criteria<double> crit = cppoptlib::Criteria<double>::defaults();
+//crit.iterations = 10; //!< Maximum number of iterations
+crit.gradNorm = 1e-6;   //!< Minimum norm of gradient vector
+//crit.fDelta = 7.5e-5;   //!< Minimum [relative] change in cost function
+crit.iterations = solverIterations;
+crit.fDelta = solverPrecision;
+solver.setStopCriteria(crit);
+solver.setHistorySize(10);
+
+solver.minimize(*this, optParams);
+
+*/
+
+// Display final solver criteria values
+/*
+std::cout << "\nSolver Criteria |";
+std::cout << "\n----------------\n" << solver.criteria() << std::endl;
+std::cout << "gradEvals =\t" << gradientEvals <<std::endl;
+*/
+
+
 
 
 
