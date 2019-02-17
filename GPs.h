@@ -187,7 +187,7 @@ namespace GP {
     std::vector<Matrix> gradList;  
 
     // DEFINE TIMER VARIABLES
-    /*
+    ///*
     double time_computecov = 0.0;
     double time_cholesky_llt = 0.0;
     double time_alpha = 0.0;
@@ -195,8 +195,8 @@ namespace GP {
     double time_term = 0.0;
     double time_grad = 0.0;
     double time_evaluation = 0.0;
-    */
-
+    //*/
+    
     // Count gradient evaluations by optimizer
     int gradientEvals = 0;
 

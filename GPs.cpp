@@ -122,7 +122,7 @@ void GP::RBF::computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & par
 // Evaluate NLML for specified kernel hyperparameters p
 double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad)
 {
-  //time EVAL_start = high_resolution_clock::now();
+  time EVAL_start = high_resolution_clock::now();
   
   // Get matrix input observation count
   auto n = static_cast<int>(obsX.rows());
@@ -133,34 +133,34 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
 
   // Compute covariance matrix and store Cholesky factor
   Matrix K(n,n);
-  //time start = high_resolution_clock::now();
+  time start = high_resolution_clock::now();
   (*kernel).computeCov(K, obsX, params, gradList, jitter, evalGrad);
-  //time end = high_resolution_clock::now();
-  //time_computecov += getTime(start, end);
+  time end = high_resolution_clock::now();
+  time_computecov += getTime(start, end);
 
 
-  //start = high_resolution_clock::now();
+  start = high_resolution_clock::now();
   auto _cholesky = K.llt();
   //Eigen::LLT<Matrix> _cholesky(n);
   //_cholesky = K.llt();
-  //end = high_resolution_clock::now();
-  //time_cholesky_llt += getTime(start, end);
+  end = high_resolution_clock::now();
+  time_cholesky_llt += getTime(start, end);
 
-  //start = high_resolution_clock::now();
+  start = high_resolution_clock::now();
   // Store alpha for DNLML calculation
   //_alpha.noalias() = cholesky.solve(obsY);
   Matrix _alpha = _cholesky.solve(obsY);
-  //end = high_resolution_clock::now();
-  //time_alpha += getTime(start, end);
+  end = high_resolution_clock::now();
+  time_alpha += getTime(start, end);
   
   // Compute NLML value
-  //start = high_resolution_clock::now();
+  start = high_resolution_clock::now();
   double NLML_value = (obsY.transpose()*_alpha)(0);
   NLML_value += n*std::log(2*PI);
   NLML_value *= 0.5;
   NLML_value += _cholesky.matrixLLT().diagonal().array().log().sum();
-  //end = high_resolution_clock::now();
-  //time_NLML += getTime(start, end);
+  end = high_resolution_clock::now();
+  time_NLML += getTime(start, end);
 
 
   if ( evalGrad )
@@ -173,7 +173,7 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       //
 
       
-      //start = high_resolution_clock::now();
+      start = high_resolution_clock::now();
       
       // Direct Implementation
       //Matrix term(n,n);
@@ -228,11 +228,11 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       term.noalias() -= _alpha*_alpha.transpose();
 
       
-      //end = high_resolution_clock::now();
-      //time_term += getTime(start, end);
+      end = high_resolution_clock::now();
+      time_term += getTime(start, end);
 
       
-      //start = high_resolution_clock::now();      
+      start = high_resolution_clock::now();      
       // Compute gradient for noise term if 'fixedNoise=false'
       int index = 0;
       if (!fixedNoise)
@@ -250,12 +250,14 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
           //g(index++) = 0.5 * (term * (*dK_i) ).trace() ;
 
           // Manually compute trace
+          /*
           double trace = 0.0;
           for ( auto i : boost::irange(0,n) )
               trace += term.row(i)*(*dK_i).col(i);
           g(index++) = 0.5*trace;
+          */
 
-          /*
+          ///*
           // POSSIBLE MULTI-THREADED IMPLEMENTATION
           // Construct zero initialized vector of partial trace values
           Matrix traceVals = Eigen::MatrixXd::Zero(threadCount,1);
@@ -288,19 +290,19 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
 
           // Compute final trace value for derivative calculation
           g(index++) = 0.5*(traceVals.sum());
-          */
+          //*/
           
         }
-      //end = high_resolution_clock::now();
-      //time_grad += getTime(start, end);
+      end = high_resolution_clock::now();
+      time_grad += getTime(start, end);
 
       // Update gradient evaluation count
       gradientEvals += 1;
 
     }
 
-  //time EVAL_end = high_resolution_clock::now();
-  //time_evaluation += getTime(EVAL_start, EVAL_end);
+  time EVAL_end = high_resolution_clock::now();
+  time_evaluation += getTime(EVAL_start, EVAL_end);
   
   return NLML_value;
   
@@ -437,7 +439,7 @@ void GP::GaussianProcess::fitModel()
 
 
   // DISPLAY TIMING INFORMATION
-  /*
+  ///*
   std::cout << "\n Time Diagnostics |\n";
   std::cout << "------------------\n";
   std::cout << "computeCov():\t  " << time_computecov/gradientEvals  << std::endl;
@@ -447,7 +449,7 @@ void GP::GaussianProcess::fitModel()
   std::cout << "Grad term:\t  " << time_term/gradientEvals  << std::endl;
   std::cout << "Gradient:\t  " << time_grad/gradientEvals  << std::endl;
   std::cout << "\nEvaluation:\t  " << time_evaluation/gradientEvals  << std::endl;
-  */
+  //*/
   
 };
 
