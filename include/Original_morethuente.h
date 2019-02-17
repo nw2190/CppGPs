@@ -68,14 +68,8 @@ class MoreThuente {
     int info           = 0;
     int infoc          = 1;
     const Scalar xtol   = 1e-15;
-    //const Scalar ftol   = 1e-4;
-    //const Scalar gtol   = 1e-2;
-
-    // MODIFIED
-    const Scalar ftol   = 5e-1;
-    const Scalar gtol   = 5e-2;
-
-    
+    const Scalar ftol   = 1e-4;
+    const Scalar gtol   = 1e-2;
     const Scalar stpmin = 1e-15;
     const Scalar stpmax = 1e15;
     const Scalar xtrapf = 4;
@@ -174,14 +168,6 @@ class MoreThuente {
         {
           //std::cout << "\n[*] Line Search Terminated\n";
           //std::cout << "Function Evaluations: " << nfev << "\t INFO = " << info << "\t x = " << x.transpose() << std::endl;
-          double lhs = f;
-          double rhs = ftest1;
-          std::cout << "\nEnd of line search:\n";
-          std::cout << lhs << " < " << rhs << "\t [ ftol = "  << ftol << " ,  stp = "  << stp << " ]\n";
-          lhs = fabs(dg);
-          rhs = gtol * (-dginit);
-          std::cout << lhs << " < " << rhs << "\t [ gtol = "  << gtol << " ,  dginit = "  << dginit << " ]\n";
-          std::cout << "function evals = " << nfev << "\t info = " << info << " \n";
           return info;
           //return -1;
         }

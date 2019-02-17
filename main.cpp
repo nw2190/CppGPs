@@ -85,15 +85,15 @@ int main(int argc, char const *argv[])
   //
 
   // Specify the input dimensions
-  //int inputDim = 1;
-  int inputDim = 2;
+  int inputDim = 1;
+  //int inputDim = 2;
   
   // Specify observation data count
   int obsCount;
   if ( inputDim == 1 )
     obsCount = 250;
   else
-    obsCount = 3000;
+    obsCount = 2000;
     
   // Specify observation noise level
   auto noiseLevel = 1.0;
@@ -146,7 +146,8 @@ int main(int argc, char const *argv[])
   if ( inputDim == 1 )
     model.setSolverPrecision(1e-4);
   else
-    model.setSolverPrecision(1e-3);
+    model.setSolverPrecision(1e-5);
+  //model.setSolverPrecision(1e-3);
 
   
   // Fit covariance kernel hyperparameters to the training data
