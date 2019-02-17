@@ -250,10 +250,46 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
           //g(index++) = 0.5 * (term * (*dK_i) ).trace() ;
 
           // Manually compute trace
+          /*
           double trace = 0.0;
           for ( auto i : boost::irange(0,n) )
               trace += term.row(i)*(*dK_i).col(i);
           g(index++) = 0.5*trace;
+          */
+
+
+          // Construct zero initialized vector of partial trace values
+          Matrix traceVals = Eigen::MatrixXd::Zero(threadCount,1);
+
+          std::vector<int> startVals;
+          for ( auto i : boost::irange(0,threadCount) )
+            startVals.emplace_back(i*d);
+
+          std::vector<int> endVals;
+          for ( auto i : boost::irange(1,threadCount) )
+            endVals.emplace_back(i*d);
+          endVals.emplace_back(n);
+
+          // Define lambda function specifying each threads solver task
+          auto lambda = [&term,&dK_i,&traceVals](int i, int startInd, int endInd) {
+                          for ( auto j : boost::irange(startInd, endInd) )
+                            traceVals(i) += term.row(j)*(*dK_i).col(j);
+                        };
+
+          // Initialize thread list
+          std::vector<std::thread> traceThreadList;
+
+          // Assign tasks to threads
+          for ( auto i : boost::irange(0,threadCount) )
+            traceThreadList.emplace_back(lambda,i,startVals[i],endVals[i]);
+
+          // Join threads
+          for ( auto & thread : traceThreadList )
+            thread.join();
+
+          // Compute final trace value for derivative calculation
+          g(index++) = 0.5*(traceVals.sum());
+          
         }
       //end = high_resolution_clock::now();
       //time_grad += getTime(start, end);
