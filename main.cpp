@@ -134,6 +134,9 @@ int main(int argc, char const *argv[])
 
   // Specify solver precision
   model.setSolverPrecision(1e-8);
+
+  // Specify number of restarts for solver
+  //model.setSolverRestarts(2);
   
   // Fit covariance kernel hyperparameters to the training data
   time start = high_resolution_clock::now();

@@ -118,6 +118,7 @@ namespace GP {
     void setBounds(Vector & lbs, Vector & ubs) { lowerBounds = lbs; upperBounds = ubs; fixedBounds=true; }
     void setSolverIterations(int i) { solverIterations = i; };
     void setSolverPrecision(double p) { solverPrecision = p; };
+    void setSolverRestarts(int n) { solverRestarts = n; };
 
     // Compute methods
     void fitModel();
@@ -156,6 +157,7 @@ namespace GP {
     void parseBounds(Vector & lbs, Vector & ubs, int augParamCount);
     int solverIterations = 1000;
     double solverPrecision = 7.5e-5;
+    double solverRestarts = 0;
       
     // Store squared distance matrix and alpha for NLML/DNLML calculations
     Matrix alpha;
