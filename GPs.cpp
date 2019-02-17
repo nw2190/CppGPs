@@ -387,27 +387,80 @@ void GP::GaussianProcess::fitModel()
   Vector lbs, ubs;
   parseBounds(lbs, ubs, augParamCount);
 
+  // Initialize optimal hyperparamter values
   Vector optParams = Eigen::MatrixXd::Zero(augParamCount,1);
 
+  // Define restart count for optimizer
+  int restartCount = 2;
 
+  // Declare variables to store optimization loop results
+  double currentVal;
+  double optVal = 1e9;
+  Vector theta(augParamCount);
+
+
+  // Define low-precision solver for restart loop
   LBFGSpp::LBFGSParam<double> param;
+  param.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE;
+  param.m = 10;
   param.epsilon = 1e-6;
-  param.max_iterations = 100;
-  param.delta = solverPrecision;
+  param.max_iterations = 20;
   param.max_linesearch = 5;
-  param.ftol = 1e-2;
+  param.ftol = 1e-4;
+
+  int niter;
+  
+  // Evaluate optimizer with various different initializations
+  for ( auto i : boost::irange(0,restartCount) )
+    {
+      if ( i == 0 )
+        {
+          // Set initial guess (should make this user specifiable...)
+          theta = Eigen::MatrixXd::Zero(augParamCount,1);
+        }
+      else
+        {
+          // Sample initial hyperparameter vector
+          theta = sampleUnifVector(lbs, ubs);
+        }
+
+      // Create solver and function object
+      LBFGSpp::LBFGSSolver<double> solver(param);
+      niter = solver.minimize(*this, theta, currentVal);
+      
+      // Compute current NLML and store parameters if optimal
+      if ( currentVal < optVal ) { optVal = currentVal; optParams = theta; }
+      
+    }
+
+  // Perform one last optimization starting from best parameters so far
+  if ( restartCount == 0 ) 
+    optParams = sampleUnifVector(lbs, ubs);
+    
+
+  LBFGSpp::LBFGSParam<double> finalparam;
+
+  //param.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_ARMIJO;
+  //param.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_WOLFE;
+  finalparam.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE;
+  
+  finalparam.m = 10;
+  finalparam.epsilon = 1e-6;
+  finalparam.max_iterations = 500;
+  //finalparam.past = 1;
+  //finalparam.delta = solverPrecision;
+  finalparam.max_linesearch = 20;
+  finalparam.ftol = 1e-4;
 
   // Create solver and function object
-  LBFGSpp::LBFGSSolver<double> solver(param);
-  double fx;
-  int niter = solver.minimize(*this, optParams, fx);
+  LBFGSpp::LBFGSSolver<double> finalsolver(finalparam);
+  niter = finalsolver.minimize(*this, optParams, optVal);
 
   std::cout << "\n[*] Solver Iterations =\t" << niter <<std::endl;
   std::cout << "\n[*] Function Evaluations =\t" << gradientEvals <<std::endl;
   
   // ASSUME OPTIMIZATION OVER LOG VALUES
   optParams = optParams.array().exp().matrix();
-
 
   ///* [ This is included in the SciKit Learn model.fit() call as well ]
 
@@ -650,8 +703,8 @@ void GP::GaussianProcess::parseBounds(Vector & lbs, Vector & ubs, int augParamCo
   lbs.resize(augParamCount);
   ubs.resize(augParamCount);
 
-  double defaultLowerBound = 0.00001;
-  double defaultUpperBound = 20.0;
+  double defaultLowerBound = 0.01;
+  double defaultUpperBound = 2.0;
   
   if ( fixedBounds )
     {

@@ -85,11 +85,6 @@ model.setObs(X,y);
 RBF kernel;
 model.setKernel(kernel);
 
-// Specify hyperparameter bounds
-Vector lbs(1);  lbs <<  0.01;
-Vector ubs(1);  ubs <<  100.0;
-model.setBounds(lbs, ubs);
-
 // Fit model to the training data
 model.fitModel();  
 ```

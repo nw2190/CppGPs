@@ -57,7 +57,7 @@ int main(int argc, char const *argv[])
 
   // Retrieve aliases from GP namescope
   using Matrix = Eigen::MatrixXd;
-  using Vector = Eigen::VectorXd;
+  //using Vector = Eigen::VectorXd;
 
   // Convenience using-declarations
   using std::cout;
@@ -132,23 +132,8 @@ int main(int argc, char const *argv[])
   RBF kernel;
   model.setKernel(kernel);
 
-  // Specify hyperparameter bounds  [ including noise bounds (index 0) ]
-  // Vector lbs(2); lbs << 0.0001 , 0.01;
-  // Vector ubs(2); ubs << 5.0    , 100.0;
-  // model.setBounds(lbs, ubs);
-
-  // Specify hyperparameter bounds  [ excluding noise bounds ]
-  Vector lbs(1);  lbs <<  0.01;
-  Vector ubs(1);  ubs <<  100.0;
-  model.setBounds(lbs, ubs);
-
   // Specify solver precision
-  if ( inputDim == 1 )
-    model.setSolverPrecision(1e-4);
-  else
-    model.setSolverPrecision(1e-5);
-  //model.setSolverPrecision(1e-3);
-
+  model.setSolverPrecision(1e-8);
   
   // Fit covariance kernel hyperparameters to the training data
   time start = high_resolution_clock::now();
