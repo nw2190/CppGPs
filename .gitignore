@@ -143,3 +143,7 @@ include/LBFGS++/LBFGS
 
 ORIGINAL_makefile
 TEST_makefile
+
+tests/1D_example
+tests/2D_example
+tests/2D_multimodal
