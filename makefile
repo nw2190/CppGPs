@@ -33,6 +33,7 @@ main.o: main.cpp GPs.h
 GPs.o: GPs.cpp GPs.h
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $< -o $@ 
 
+# Test object files
 tests/1D_example.o: tests/1D_example.cpp GPs.h
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $< -o $@ 
 
@@ -41,4 +42,4 @@ tests/2D_example.o: tests/2D_example.cpp GPs.h
 
 # Clean
 clean:
-	rm $(OBJECTS) $(RUNFILE)
+	rm GPs.o main.o tests/1D_example tests/2D_example
