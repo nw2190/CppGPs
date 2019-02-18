@@ -17,7 +17,7 @@ install: main.o GPs.o
 	$(CXX) $(CXXFLAGS) -o Run main.cpp GPs.cpp
 
 # Test target list
-tests: test1 test2
+tests: test1 test2 test3
 
 # Test targets
 test1: tests/1D_example.o GPs.o
@@ -25,6 +25,9 @@ test1: tests/1D_example.o GPs.o
 
 test2: tests/2D_example.o GPs.o
 	$(CXX) $(CXXFLAGS) -o tests/2D_example tests/2D_example.cpp GPs.cpp
+
+test3: tests/2D_multimodal.o GPs.o
+	$(CXX) $(CXXFLAGS) -o tests/2D_multimodal tests/2D_multimodal.cpp GPs.cpp
 
 # Object files
 main.o: main.cpp GPs.h
@@ -40,6 +43,9 @@ tests/1D_example.o: tests/1D_example.cpp GPs.h
 tests/2D_example.o: tests/2D_example.cpp GPs.h
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $< -o $@ 
 
+tests/2D_multimodal.o: tests/2D_multimodal.cpp GPs.h
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $< -o $@ 
+
 # Clean
 clean:
-	rm GPs.o main.o tests/1D_example tests/2D_example
+	rm GPs.o main.o tests/1D_example.o tests/2D_example.o tests/2D_multimodal.o tests/1D_example tests/2D_example tests/2D_multimodal 
