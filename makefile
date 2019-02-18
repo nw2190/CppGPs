@@ -1,55 +1,44 @@
-CC=gcc
+# Define compiler and remove commands
 CXX=g++
 RM=rm -f
 
 # Specify path to Eigen headers
 EIGENPATH=/usr/include/eigen3
 
-### STANDARD
-#FLAGS=-std=c++17 -I${EIGENPATH} -g -march=native -fopenmp
+### Optimize gcc compiler flags
+CXXFLAGS=-std=c++17 -I${EIGENPATH} -DNDEBUG -march=native -fopenmp -O3
+CFLAGS=-c -Wall
 
-### GCC OPTIMIZED
-FLAGS=-std=c++17 -I${EIGENPATH} -DNDEBUG -march=native -fopenmp -O3
-#FLAGS=-std=c++17 -I${EIGENPATH} -g -march=native -fopenmp -O3
+# Define all target list
+all: main.cpp GPs.cpp install tests
 
-### ALTERNATE
-#FLAGS=-std=c++17 -I${EIGENPATH} -g -floop-parallelize-all -ftree-parallelize-loops=4 -march=native -fopenmp -O3
+# Install target list
+install: main.o GPs.o
+	$(CXX) $(CXXFLAGS) -o Run main.cpp GPs.cpp
 
-### LAPACKE
-#FLAGS=-std=c++17 -I${EIGENPATH} -DNDEBUG -llapacke -llapack -lblas -lm -march=native -fopenmp -O3
+# Test target list
+tests: test1 test2
 
-### INTEL MKL
-#OMPROOT=/opt/intel/compilers_and_libraries_2019.2.187/linux/compiler/lib
-#LIBIOMP=/opt/intel/compilers_and_libraries_2019.2.187/linux/compiler/lib/intel64/libiomp5.a
-#MKLROOT=/opt/intel/mkl
-#MKLPATH=${MKLROOT}/lib/intel64_lin
-#MKLINCLUDE=${MKLROOT}/include
-#FLAGS=-L${MKLPATH} -I${MKLINCLUDE} ${MKLPATH}/libmkl_intel_lp64.a ${MKLPATH}/libmkl_intel_thread.a ${MKLPATH}/libmkl_core.a ${MKLPATH}/libmkl_intel_lp64.a ${MKLPATH}/libmkl_intel_thread.a ${MKLPATH}/libmkl_core.a -I${EIGENPATH} ${LIBIOMP} -lpthread -lm -O3
+# Test targets
+test1: tests/1D_example.o GPs.o
+	$(CXX) $(CXXFLAGS) -o tests/1D_example tests/1D_example.cpp GPs.cpp
 
-# 
-CFLAGS=-c -Wall 
-HEADERS=GPs.h #minimize.h utils.h
-#SOURCES=main.cpp GPs.cpp ./utils/minimize.cpp #utils.cpp
-SOURCES=main.cpp GPs.cpp 
-OBJECTS=$(SOURCES:.cpp=.o)
-RUNFILE=Run
+test2: tests/2D_example.o GPs.o
+	$(CXX) $(CXXFLAGS) -o tests/2D_example tests/2D_example.cpp GPs.cpp
 
-all: $(SOURCES) install
+# Object files
+main.o: main.cpp GPs.h
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $< -o $@
 
-install: $(OBJECTS)
-	$(CXX) $(FLAGS) -o $(RUNFILE) $(SOURCES)
+GPs.o: GPs.cpp GPs.h
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $< -o $@ 
 
-main.o: main.cpp $(HEADER)
-	$(CXX) $(CFLAGS) $(FLAGS) $< -o $@
+tests/1D_example.o: tests/1D_example.cpp GPs.h
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $< -o $@ 
 
-GPs.o: GPs.cpp $(HEADER)
-	$(CXX) $(CFLAGS) $(FLAGS) $< -o $@
+tests/2D_example.o: tests/2D_example.cpp GPs.h
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $< -o $@ 
 
-#minimize.o: ./utils/minimize.cpp $(HEADER)
-#	$(CXX) $(CFLAGS) $(FLAGS) $< -o $@
-
-#utils.o: utils.cpp $(HEADER)
-#	$(CXX) $(CFLAGS) $(FLAGS) $< -o $@
-
+# Clean
 clean:
 	rm $(OBJECTS) $(RUNFILE)

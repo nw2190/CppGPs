@@ -140,3 +140,6 @@ vgcore.*
 
 include/LBFGS++/*
 include/LBFGS++/LBFGS
+
+ORIGINAL_makefile
+TEST_makefile
