@@ -151,3 +151,7 @@ GPyTorch_Results
 GPyTorch_Results/*
 SciKit_Learn_Results
 SciKit_Learn_Results/*
+tests/GPyTorch_Results
+tests/GPyTorch_Results/*
+tests/SciKit_Learn_Results
+tests/SciKit_Learn_Results/*
