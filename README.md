@@ -7,12 +7,12 @@ Implementation of Numerical Gaussian Processes in C++
 * [LBFGS++](https://github.com/yixuan/LBFGSpp) - A header-only implementation of the L-BFGS algorithm in C++
 <!---* [CppOptimizationLibrary](https://github.com/PatWie/CppNumericalSolvers) - A header-only optimization library --->
 
-### Optional Dependencies for Plotting
+#### Optional Dependencies for Plotting
 * [NumPy](http://www.numpy.org/) - Scientific computing package for Python
 * [csv](https://docs.python.org/3/library/csv.html) - Python module for working with comma separated value (csv) files
 * [MatPlotLib](https://matplotlib.org/) - Python plotting library
 
-### Optional Dependencies for SciKit Learn / GPyTorch Comparisons
+#### Optional Dependencies for SciKit Learn / GPyTorch Comparisons
 * [SciKit Learn](https://scikit-learn.org/stable/) - Data analysis library for Python
 * [PyTorch](https://pytorch.org/) - Open source deep learning platform
 * [GPyTorch](https://github.com/cornellius-gp/gpytorch) - Efficient implementation of Gaussian processes in PyTorch
