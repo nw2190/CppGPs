@@ -354,15 +354,15 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
           //
           //  then it would give us the reduction:
           //
-          //  d/dt log p(y|X,t)  =  1/2 * trace[ ( (K'^-1 y)(K'^-1 y)^T - K'^-1 ) dK'/dt  ]
+          //  d/dt -log p(y|X,t)  =  -1/2 * trace[ ( (K'^-1 y)(K'^-1 y)^T - K'^-1 ) dK'/dt  ]
           //
-          //   =  1/2 * trace[ ( K'^-1 y y^T K'^-1 - K'^-1 ) dK'/dt  ]
+          //   =  -1/2 * trace[ ( K'^-1 y y^T K'^-1 - K'^-1 ) dK'/dt  ]
           //
-          //   =  1/2 * trace[ ( K'^-1 y y^T K'^1 - K'^-1 ) K'  ]
+          //   =  -1/2 * trace[ ( K'^-1 y y^T K'^1 - K'^-1 ) K'  ]
           //
-          //   =  1/2 * trace[  (K'^-1 y) y^T - I  ]
+          //   =  -1/2 * trace[  (K'^-1 y) y^T - I  ]
           //
-          //   =  1/2 * trace[  alpha * y^T - I  ]
+          //   =  -1/2 * trace[  alpha * y^T - I  ]
           //
           //
           //  but...    we do have:
@@ -371,7 +371,7 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
           //
           //  so that the (corected) calculation above still yields:
           //
-          //   =  1/2 * trace[  (alpha * y^T - I)  -  n * term  ]
+          //   =  -1/2 * trace[  (alpha * y^T - I)  -  n * term  ]
           //
           //  and the trace of "term" has already been calculated...
           //
