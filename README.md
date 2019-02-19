@@ -12,10 +12,8 @@ Implementation of Numerical Gaussian Processes in C++
 * [csv](https://docs.python.org/3/library/csv.html) - Python module for working with comma separated value (csv) files
 * [MatPlotLib](https://matplotlib.org/) - Python plotting library
 
-### Optional Dependencies for SciKit Learn Comparison
+### Optional Dependencies for SciKit Learn / GPyTorch Comparisons
 * [SciKit Learn](https://scikit-learn.org/stable/) - Data analysis library for Python
-
-### Optional Dependencies for GPyTorch Comparison
 * [PyTorch](https://pytorch.org/) - Open source deep learning platform
 * [GPyTorch](https://github.com/cornellius-gp/gpytorch) - Efficient implementation of Gaussian processes in PyTorch
 
