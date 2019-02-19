@@ -555,11 +555,7 @@ void GP::GaussianProcess::fitModel()
   finalparam.epsilon = 1e-5;
   finalparam.max_linesearch = 20;
   double eps = 2.220446049250313e-16;
-  //double factr = 1e7;
-  //double factr = 1e8;
   double factr = solverPrecision;
-  //finalparam.max_iterations = 100;
-  finalparam.max_iterations = 25;
   finalparam.past = 1;
   finalparam.ftol = factr*eps;
 

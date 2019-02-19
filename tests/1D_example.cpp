@@ -132,9 +132,8 @@ int main(int argc, char const *argv[])
   RBF kernel;
   model.setKernel(kernel);
 
-  // Specify solver precision [NEEDS TO BE RE-IMPLMENTED USING "FACTR"]
-  //model.setSolverPrecision(1e-8);
-  model.setSolverPrecision(1e7);
+  // Specify solver precision 
+  model.setSolverPrecision(1e10);
 
   // Specify number of restarts for solver
   //model.setSolverRestarts(2);

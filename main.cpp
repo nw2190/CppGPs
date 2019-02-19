@@ -136,10 +136,7 @@ int main(int argc, char const *argv[])
   //model.setSolverPrecision(1e-8);
 
   if ( inputDim == 1 )
-    model.setSolverPrecision(1e7);
-  else
-    model.setSolverPrecision(1e8);
-
+   model.setSolverPrecision(1e9);
   
   // Specify number of restarts for solver
   //model.setSolverRestarts(2);

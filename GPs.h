@@ -167,8 +167,7 @@ namespace GP {
     bool fixedBounds = false;
     void parseBounds(Vector & lbs, Vector & ubs, int augParamCount);
     int solverIterations = 1000;
-    //double solverPrecision = 7.5e-5;
-    double solverPrecision = 1e7;
+    double solverPrecision = 1e8;
     double solverRestarts = 0;
       
     // Store squared distance matrix and alpha for NLML/DNLML calculations
