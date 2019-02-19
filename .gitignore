@@ -147,3 +147,5 @@ TEST_makefile
 tests/1D_example
 tests/2D_example
 tests/2D_multimodal
+GPyTorch_Results
+GPyTorch_Results/*

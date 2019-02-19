@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, WhiteKernel, ConstantKernel
+import os
 import csv
 import time
 
@@ -39,6 +40,8 @@ def remove_axes(ax):
 # Evaluate SciKit Learn Gaussian Process Regressor and Plot Results
 def main():
 
+    # Specify whether or not to compare GPyTorch results
+    USE_GPyTorch = True
 
     # First determine the dimension of the input values
     filename = "predictions.csv"
@@ -99,12 +102,30 @@ def main():
                 samples.append(vals)
         samples = np.array(samples).astype(np.float64)
     
-    
+
+    if USE_GPyTorch:
+
+        GPyTorch_results_dir = "./GPyTorch_Results/"
+        
+        # Get GPyTorch prediction data
+        filename = os.path.join(GPyTorch_results_dir, "predMean.npy")
+        gpy_predMean = np.load(filename)
+
+        filename = os.path.join(GPyTorch_results_dir, "predStd.npy")
+        gpy_predStd = np.load(filename)
+        
+        if inputDim == 1:
+            # Get posterior samples
+            filename = os.path.join(GPyTorch_results_dir, "samples.npy")
+            gpy_samples = np.load(filename)
+            gpy_samples = np.transpose(gpy_samples,[1,0])
+
+
+        
     ### SCIKIT LEARN IMPLEMENTATION
     X = np.reshape(obsX, [-1, inputDim])
     Y = np.reshape(obsY, [-1])
     Xtest = np.reshape(inVals, [-1, inputDim])
-
 
     # Model parameters
     n_restarts = 0
@@ -170,7 +191,21 @@ def main():
         plt.suptitle("Scikit Learn Implementation")
 
 
-        ### C++ IMPLEMENTATION
+        # Plot Scikit Learn results
+        plt.figure()
+        plt.plot(inVals, gpy_predMean, 'C0', linewidth=2.0)
+        alpha = 0.075
+        for k in [1,2,3]:
+            plt.fill_between(inVals, gpy_predMean-k*gpy_predStd, gpy_predMean+k*gpy_predStd, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
+        plt.plot(inVals, trueVals, 'C1', linewidth=1.0, linestyle="dashed")
+        alpha_scatter = 0.5
+        plt.scatter(obsX, obsY, alpha=alpha_scatter)
+        for i in range(0,gpy_samples.shape[1]):
+            plt.plot(inVals, gpy_samples[:,i], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
+        plt.suptitle("GPyTorch Implementation")
+        
+
+        # CppGPs results
         plt.figure()    
         plt.plot(inVals, predMean, 'C0', linewidth=2.0)
         for k in [1,2,3]:
@@ -179,7 +214,7 @@ def main():
         plt.scatter(obsX, obsY, alpha=alpha_scatter)
         for i in range(0,samples.shape[0]):
             plt.plot(inVals, samples[i,:], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
-        plt.suptitle("C++ Implementation")    
+        plt.suptitle("CppGPs Implementation")    
         plt.show()
 
 
