@@ -336,17 +336,31 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       
       if (!fixedScaling)
         {
-          double trace = 0.0;
-          Matrix dK = K - noise*Matrix::Identity(n,n);
-          for ( auto j : boost::irange(0, n) )
-            trace += term.row(j)*dK.col(j);
-          g(index++) = 0.5*trace;
+          if (!fixedNoise)
+            {
+              double trace = 0.0;
+              for ( auto j : boost::irange(0, n) )
+                trace -= _alpha(j)*obsY(j);
+              trace += n;
+              trace *= 0.5;
+              // Add  1/2 * trace[(noise * term)]  (i.e. the noise gradient)
+              trace -= g(index-1);
+              g(index++) = trace;
+            }
+          else
+            {
+              double trace = 0.0;
+              Matrix dK = K - noise*Matrix::Identity(n,n);
+              for ( auto j : boost::irange(0, n) )
+                trace += term.row(j)*dK.col(j);
+              g(index++) = 0.5*trace;
+            }
           //  
           //  NOTE: The following implementation does not account for noise term (!)
           //
           //  Ah, it's so close though...
           //
-          //  The adjusted covariance matrix is:  K' = s*K + n*I  
+          //  The adjusted covariance matrix is:  K'  =  s * K  +  noise * I  
           //
           //  But if we had   K' = s*K   and set   t = log(s) ~ s = exp(t) :
           //
@@ -367,11 +381,11 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
           //
           //  but...    we do have:
           //  
-          //   dK'/dt  =  d/dt[s*K]  =  s * K  =  K' - n*I
+          //   dK'/dt  =  d/dt[s*K]  =  s * K  =  K' - noise * I
           //
           //  so that the (corected) calculation above still yields:
           //
-          //   =  -1/2 * trace[  (alpha * y^T - I)  -  n * term  ]
+          //   =  -1/2 * trace[  (alpha * y^T - I)  -  noise * term  ]
           //
           //  and the trace of "term" has already been calculated...
           //
@@ -590,8 +604,6 @@ void GP::GaussianProcess::fitModel()
   cholesky = K.llt();
   alpha.noalias() = cholesky.solve(obsY);
 
-
-  std::cout << std::endl << optParams.transpose() << std::endl;
   // Assign tuned parameters to model
   if (!fixedNoise)
     {
@@ -604,7 +616,7 @@ void GP::GaussianProcess::fitModel()
       if (!fixedScaling)
         scalingLevel = optParams[0];
     }
-  std::cout << std::endl << optParams.transpose() << std::endl;  
+
   optParams = static_cast<Vector>(optParams.tail(paramCount));
   (*kernel).setParams(optParams);
 

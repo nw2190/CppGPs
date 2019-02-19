@@ -40,11 +40,11 @@ def remove_axes(ax):
 # Plot results of CppGPs, SciKit Learn, and GPyTorch
 def main():
 
-    # Specify whether or not to compare GPyTorch results
-    USE_GPyTorch = True
-
     # Specify whether or not to compare SciKit Learn results
     USE_SciKit_Learn = True
+
+    # Specify whether or not to compare GPyTorch results
+    USE_GPyTorch = False
     
     # First determine the dimension of the input values
     filename = "predictions.csv"
@@ -115,6 +115,27 @@ def main():
     NLML = NLML_tmp[0][0]
 
     
+            
+    if USE_SciKit_Learn:
+
+        SciKit_Learn_results_dir = "./SciKit_Learn_Results/"
+        
+        # Get SciKit Learn prediction data
+        filename = os.path.join(SciKit_Learn_results_dir, "predMean.npy")
+        skl_predMean = np.load(filename)
+
+        filename = os.path.join(SciKit_Learn_results_dir, "predStd.npy")
+        skl_predStd = np.load(filename)
+        
+        if inputDim == 1:
+            # Get posterior samples
+            filename = os.path.join(SciKit_Learn_results_dir, "samples.npy")
+            skl_samples = np.load(filename)
+
+        filename = os.path.join(SciKit_Learn_results_dir, "NLML.npy")
+        skl_NLML = np.load(filename)
+
+
     if USE_GPyTorch:
 
         GPyTorch_results_dir = "./GPyTorch_Results/"
@@ -135,26 +156,7 @@ def main():
         filename = os.path.join(GPyTorch_results_dir, "NLML.npy")
         gpy_NLML = np.load(filename)
             
-
-            
-    if USE_SciKit_Learn:
-
-        SciKit_Learn_results_dir = "./SciKit_Learn_Results/"
         
-        # Get SciKit Learn prediction data
-        filename = os.path.join(SciKit_Learn_results_dir, "predMean.npy")
-        skl_predMean = np.load(filename)
-
-        filename = os.path.join(SciKit_Learn_results_dir, "predStd.npy")
-        skl_predStd = np.load(filename)
-        
-        if inputDim == 1:
-            # Get posterior samples
-            filename = os.path.join(SciKit_Learn_results_dir, "samples.npy")
-            skl_samples = np.load(filename)
-
-        filename = os.path.join(SciKit_Learn_results_dir, "NLML.npy")
-        skl_NLML = np.load(filename)
             
 
     ###                          ###
@@ -182,31 +184,33 @@ def main():
         
 
         # Plot SciKit Learn results
-        plt.figure()
-        plt.plot(inVals, skl_predMean, 'C0', linewidth=2.0)
-        alpha = 0.075
-        for k in [1,2,3]:
-            plt.fill_between(inVals, skl_predMean-k*skl_predStd, skl_predMean+k*skl_predStd, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
-        plt.plot(inVals, trueVals, 'C1', linewidth=1.0, linestyle="dashed")
-        alpha_scatter = 0.5
-        plt.scatter(obsX, obsY, alpha=alpha_scatter)
-        for i in range(0,skl_samples.shape[1]):
-            plt.plot(inVals, skl_samples[:,i], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
-        plt.suptitle("SciKit Learn Implementation")
+        if USE_SciKit_Learn:
+            plt.figure()
+            plt.plot(inVals, skl_predMean, 'C0', linewidth=2.0)
+            alpha = 0.075
+            for k in [1,2,3]:
+                plt.fill_between(inVals, skl_predMean-k*skl_predStd, skl_predMean+k*skl_predStd, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
+            plt.plot(inVals, trueVals, 'C1', linewidth=1.0, linestyle="dashed")
+            alpha_scatter = 0.5
+            plt.scatter(obsX, obsY, alpha=alpha_scatter)
+            for i in range(0,skl_samples.shape[1]):
+                plt.plot(inVals, skl_samples[:,i], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
+            plt.suptitle("SciKit Learn Implementation")
 
         
         # Plot GPyTorch results
-        plt.figure()
-        plt.plot(inVals, gpy_predMean, 'C0', linewidth=2.0)
-        alpha = 0.075
-        for k in [1,2,3]:
-            plt.fill_between(inVals, gpy_predMean-k*gpy_predStd, gpy_predMean+k*gpy_predStd, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
-        plt.plot(inVals, trueVals, 'C1', linewidth=1.0, linestyle="dashed")
-        alpha_scatter = 0.5
-        plt.scatter(obsX, obsY, alpha=alpha_scatter)
-        for i in range(0,gpy_samples.shape[1]):
-            plt.plot(inVals, gpy_samples[:,i], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
-        plt.suptitle("GPyTorch Implementation")
+        if USE_GPyTorch:
+            plt.figure()
+            plt.plot(inVals, gpy_predMean, 'C0', linewidth=2.0)
+            alpha = 0.075
+            for k in [1,2,3]:
+                plt.fill_between(inVals, gpy_predMean-k*gpy_predStd, gpy_predMean+k*gpy_predStd, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
+            plt.plot(inVals, trueVals, 'C1', linewidth=1.0, linestyle="dashed")
+            alpha_scatter = 0.5
+            plt.scatter(obsX, obsY, alpha=alpha_scatter)
+            for i in range(0,gpy_samples.shape[1]):
+                plt.plot(inVals, gpy_samples[:,i], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
+            plt.suptitle("GPyTorch Implementation")
         
 
         # CppGPs results
