@@ -5,8 +5,12 @@ RM=rm -f
 # Specify path to Eigen headers
 EIGENPATH=/usr/include/eigen3
 
-### Optimize gcc compiler flags
-CXXFLAGS=-std=c++17 -I${EIGENPATH} -DNDEBUG -march=native -fopenmp -O3
+### Optimize gcc compiler flags [ NO DEBUGGING ]
+#CXXFLAGS=-std=c++17 -I${EIGENPATH} -DNDEBUG -march=native -fopenmp -O3
+
+### Optimize gcc compiler flags [ DEBUGGING ]
+CXXFLAGS=-std=c++17 -I${EIGENPATH} -g -march=native -fopenmp -O3
+
 CFLAGS=-c -Wall
 
 # Define all target list

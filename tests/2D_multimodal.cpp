@@ -110,6 +110,7 @@ int main(int argc, char const *argv[])
 
   // Specify solver precision [NEEDS TO BE RE-IMPLMENTED USING "FACTR"]
   //model.setSolverPrecision(1e-8);
+  model.setSolverPrecision(1e8);
 
   // Specify number of restarts for solver
   //model.setSolverRestarts(2);
@@ -126,8 +127,10 @@ int main(int argc, char const *argv[])
 
   // Retrieve the tuned/optimized kernel hyperparameters
   auto optParams = model.getParams();
-  cout << "\nOptimized Hyperparameters:" << endl << optParams.transpose() << "  ";
   auto noiseL = model.getNoise();
+  auto scalingL = model.getScaling();
+  //cout << "\nOptimized Hyperparameters:" << endl << scalingL << " * " << optParams.transpose() << "  ";
+  cout << "\nOptimized Hyperparameters:" << endl << std::sqrt(scalingL) << "**2 * " << optParams.transpose() << "  ";
   cout << "(Noise = " << noiseL << ")\n" << endl;
 
   // Display the negative log marginal likelihood (NLML) of the optimized model

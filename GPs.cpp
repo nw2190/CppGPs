@@ -85,7 +85,7 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
                   for ( auto i : boost::irange(startInd,endInd) )
                     {
                       for ( auto j : boost::irange(i+1, n) )
-                        D(i,j) = D(j,i) = Dv(static_cast<int>(i*n-(i*(i+1))/2+j-i-1), 0);
+                       D(i,j) = D(j,i) = Dv(static_cast<int>(i*n-(i*(i+1))/2+j-i-1), 0);
                     }
                 };
 
@@ -107,19 +107,30 @@ void GP::squareForm(Matrix & D, Matrix & Dv, int n, double diagVal)
 
 
 // Parse kernel parameter vector, separating noise from the kernel hyperparameters
-double GP::Kernel::parseParams(const Vector & params, Vector & kernelParams)
+void GP::Kernel::parseParams(const Vector & params, Vector & kernelParams, std::vector<double> & nonKernelParams)
 {
-  if ( params.size() > paramCount )
+  if ( !fixedNoise )
     {
-      double noise = params(0);
-      kernelParams = params.tail(paramCount);
-      return noise;
+      // Noise = params(0)
+      nonKernelParams.emplace_back(params(0));
+      if ( !fixedScaling )
+        nonKernelParams.emplace_back(params(1));
+      else
+        nonKernelParams.emplace_back(scalingLevel);
     }
   else
     {
-      kernelParams = params;
-      return noiseLevel;
+      // Scaling = params(0)
+      nonKernelParams.emplace_back(noiseLevel);
+      if ( !fixedScaling )
+        nonKernelParams.emplace_back(params(0));
+      else
+        nonKernelParams.emplace_back(scalingLevel);
     }
+
+  // Trim kernel parameter vector
+  kernelParams = params.tail(paramCount);
+
 }
 
 // Compute covariance matrix (and gradients) from a vector of squared pairwise distances Dv
@@ -127,9 +138,12 @@ void GP::RBF::computeCov(Matrix & K, Matrix & obsX, Vector & params, std::vector
 {
   auto n = static_cast<int>(K.rows());
 
-  // Separate noise from kernel hyperparameters
+  // Separate noise and scaling parameters from kernel hyperparameters
   Vector kernelParams;
-  double noise = parseParams(params, kernelParams);
+  std::vector<double> noiseAndScaling;
+  parseParams(params, kernelParams, noiseAndScaling);
+  double noise = noiseAndScaling[0];
+  double scaling = noiseAndScaling[1];
   
   // Compute distance matrix for each call
   Matrix Dv;
@@ -137,17 +151,29 @@ void GP::RBF::computeCov(Matrix & K, Matrix & obsX, Vector & params, std::vector
 
   // Evaluate covariance kernel on pairwise distance vector
   Matrix Kv;
-  Kv.noalias() = ( (-0.5 / std::pow(kernelParams(0),2)) * Dv ).array().exp().matrix();
-  squareForm(K, Kv, n, 1.0 + noise + jitter);
+  Kv.noalias() = scaling * ( (-0.5 / std::pow(kernelParams(0),2)) * Dv ).array().exp().matrix();
+
+  // Make sure not to scale the jitter and noise terms
+  squareForm(K, Kv, n, scaling*1.0 + jitter + noise);
 
   // Compute gradients w.r.t. kernel hyperparameters
   if ( evalGrad )
     {
+      // Prepend gradient list with scaling term
+      //int index = 0;
+      //if (!fixedScaling)
+      //  {
+      //    Matrix dK_scaling;
+      //    squareForm(dK_scaling, Kv, n, -noise);
+      //    gradList[index++] = dK_scaling;
+      //  }
+      
       Matrix dK_i;
       Matrix dK_iv;
       dK_iv.noalias() = 1/std::pow(kernelParams(0),2) * ( Dv.array() * Kv.array() ).matrix();
       squareForm(dK_i, dK_iv, n); // Note: diagVal = 0.0
       gradList[0] = dK_i.eval();
+      //gradList[index] = dK_i.eval();
     }
 
 };
@@ -222,7 +248,6 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
   end = high_resolution_clock::now();
   time_NLML += getTime(start, end);
 
-
   if ( evalGrad )
     {
 
@@ -291,18 +316,65 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       end = high_resolution_clock::now();
       time_term += getTime(start, end);
 
-      
+
       start = high_resolution_clock::now();      
       // Compute gradient for noise term if 'fixedNoise=false'
       int index = 0;
+      double noise;
       if (!fixedNoise)
         {
           // Specify gradient of white noise kernel  [ dK_i = params(0)*Matrix::Identity(n,n) ]
           //g(index++) = 0.5 * (term * params(0)).trace() ;
+          noise = params(0);
           g(index) = term.trace();
-          g(index++) *= 0.5 * params(0);
+          g(index++) *= 0.5 * noise;
+          //g(index++) *= 0.5 * params(0);
+        }
+      else
+        noise = noiseLevel;
+
+      
+      if (!fixedScaling)
+        {
+          double trace = 0.0;
+          Matrix dK = K - noise*Matrix::Identity(n,n);
+          for ( auto j : boost::irange(0, n) )
+            trace += term.row(j)*dK.col(j);
+          g(index++) = 0.5*trace;
+          //  
+          //  NOTE: The following implementation does not account for noise term (!)
+          //
+          //  Ah, it's so close though...
+          //
+          //  The adjusted covariance matrix is:  K' = s*K + n*I  
+          //
+          //  But if we had   K' = s*K   and set   t = log(s) ~ s = exp(t) :
+          //
+          //  ( so that  dK'/dt  =  d/dt[ s*K ]  =  d/ds[ s*K ] * ds/dt  =  s * K  =  K'  )
+          //
+          //  then it would give us the reduction:
+          //
+          //  d/dt log p(y|X,t)  =  1/2 * trace[ ( (K'^-1 y)(K'^-1 y)^T - K'^-1 ) dK'/dt  ]
+          //
+          //   =  1/2 * trace[ ( K'^-1 y y^T K'^-1 - K'^-1 ) dK'/dt  ]
+          //
+          //   =  1/2 * trace[ ( K'^-1 y y^T K'^1 - K'^-1 ) K'  ]
+          //
+          //   =  1/2 * trace[  (K'^-1 y) y^T - I  ]
+          //
+          //   =  1/2 * trace[  alpha * y^T - I  ]
+          //
+          //double trace = 0.0;
+          //for ( auto i : boost::irange(0,n) )
+          //  trace -= _alpha(i)*obsY(i);
+          //trace += n;
+          //g(index++) = 0.5 * trace;
         }
 
+      // Specify gradient w.r.t. the kernel scaling parameter
+      //if (!fixedScaling)
+      //  gradList.insert(gradList.begin(), K - noise*Matrix::Identity(n,n));
+      
       // Compute gradients with respect to kernel hyperparameters
       for (auto dK_i = gradList.begin(); dK_i != gradList.end(); ++dK_i) 
         {
@@ -350,10 +422,9 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
       gradientEvals += 1;
 
     }
-
+  
   time EVAL_end = high_resolution_clock::now();
   time_evaluation += getTime(EVAL_start, EVAL_end);
-  
   return NLML_value;
   
 }
@@ -367,23 +438,50 @@ double GP::GaussianProcess::evalNLML(const Vector & p)
 }
 
 
+int GP::GaussianProcess::getAugParamCount(int count)
+{
+  if (!fixedNoise)
+    {
+      if (!fixedScaling)
+        return count + 2;
+      else
+        return count + 1;
+    }
+  else
+    {
+      if (!fixedScaling)
+        return count + 1;
+      else
+        return count;
+    }
+}
+
 // Fit model hyperparameters
 void GP::GaussianProcess::fitModel()
 {
 
   // Get combined parameter/noise vector size
   paramCount = (*kernel).getParamCount();
-  augParamCount = (fixedNoise) ? static_cast<int>(paramCount) : static_cast<int>(paramCount) + 1 ;
+  //augParamCount = (fixedNoise) ? static_cast<int>(paramCount) : static_cast<int>(paramCount) + 1 ;
+  augParamCount = getAugParamCount(paramCount);
 
   // Pass noise level to kernel when 'fixedNoise=true'
   if ( fixedNoise )
     (*kernel).setNoise(noiseLevel);
+  if ( fixedScaling )
+    (*kernel).setScaling(scalingLevel);
 
   // Declare vector for storing gradient calculations
   Vector g(augParamCount);
 
   // Initialize gradient list with identity matrices
-  for ( auto i : boost::irange(0,augParamCount) )
+  //for ( auto i : boost::irange(0,augParamCount) )
+  //int gradientCount = paramCount;
+  //if (!fixedScaling)
+  //  gradientCount += 1;
+  //for ( auto i : boost::irange(0,gradientCount) )
+
+  for ( auto i : boost::irange(0,paramCount) )
     {
       // Avoid compiler warning for unused variable
       (void)i;
@@ -405,7 +503,6 @@ void GP::GaussianProcess::fitModel()
   double currentVal;
   double optVal = 1e9;
   Vector theta(augParamCount);
-
 
   // Define low-precision solver for restart loop
   LBFGSpp::LBFGSParam<double> param;
@@ -442,30 +539,27 @@ void GP::GaussianProcess::fitModel()
     }
 
   // Perform one last optimization starting from best parameters so far
-  if ( restartCount == 0 ) 
-    optParams = sampleUnifVector(lbs, ubs);
+  //if ( restartCount == 0 ) 
+  //  optParams = sampleUnifVector(lbs, ubs);
     
 
   LBFGSpp::LBFGSParam<double> finalparam;
 
+  // Line Search Options
   //param.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_ARMIJO;
   //param.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_WOLFE;
-  //finalparam.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE;
-  //finalparam.m = 10;
-  //finalparam.past = 1;
-  //finalparam.delta = solverPrecision;
-  //finalparam.ftol = 1e-4;
-  
-  //finalparam.epsilon = 1e-6;
-  //finalparam.max_iterations = 100;
-  //finalparam.max_linesearch = 20;
+  //param.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE;
 
   // TRY MODELLING SCIPY fmin_l_bfgs_b PARAMETERS
   finalparam.m = 10;
   finalparam.epsilon = 1e-5;
   finalparam.max_linesearch = 20;
   double eps = 2.220446049250313e-16;
-  double factr = 1e7;
+  //double factr = 1e7;
+  //double factr = 1e8;
+  double factr = solverPrecision;
+  //finalparam.max_iterations = 100;
+  finalparam.max_iterations = 25;
   finalparam.past = 1;
   finalparam.ftol = factr*eps;
 
@@ -488,14 +582,22 @@ void GP::GaussianProcess::fitModel()
   cholesky = K.llt();
   alpha.noalias() = cholesky.solve(obsY);
 
-  
+
+  std::cout << std::endl << optParams.transpose() << std::endl;
   // Assign tuned parameters to model
   if (!fixedNoise)
     {
-      noiseLevel = static_cast<double>((optParams.head(1))[0]);
-      optParams = static_cast<Vector>(optParams.tail(augParamCount - 1));
+      noiseLevel = optParams[0];
+      if (!fixedScaling)
+          scalingLevel = optParams[1];
     }
-  
+  else
+    {
+      if (!fixedScaling)
+        scalingLevel = optParams[0];
+    }
+  std::cout << std::endl << optParams.transpose() << std::endl;  
+  optParams = static_cast<Vector>(optParams.tail(paramCount));
   (*kernel).setParams(optParams);
 
 
@@ -511,6 +613,7 @@ void GP::GaussianProcess::fitModel()
   std::cout << "Gradient:\t  " << time_grad/gradientEvals  << std::endl;
   std::cout << "\nEvaluation:\t  " << time_evaluation/gradientEvals  << std::endl;
   //*/
+  std::cout << std::endl << optParams.transpose() << std::endl;  
   
 };
 
@@ -528,11 +631,13 @@ void GP::GaussianProcess::predict()
   Matrix kstar_and_v;
   kstar_and_v.resize(n,m);
   (*kernel).computeCrossCov(kstar_and_v, obsX, predX, params);
-
+  kstar_and_v *= scalingLevel;
+    
   // Compute covariance matrix for test points
   Matrix kstarmat;
   kstarmat.resize(m,m);
   (*kernel).computeCrossCov(kstarmat, predX, predX, params);
+  kstarmat *= scalingLevel;
 
   // Set predictive means/variances and compute negative log marginal likelihood
   Matrix cholMat(cholesky.matrixL());
@@ -564,7 +669,8 @@ Matrix GP::GaussianProcess::getSamples(int count)
     }
 
   // Compute Cholesky factor L
-  Matrix L = ( predCov + (noiseLevel+jitter)*Matrix::Identity(static_cast<int>(predCov.cols()), static_cast<int>(predCov.cols())) ).llt().matrixL();
+  //Matrix L = ( predCov + (noiseLevel+jitter)*Matrix::Identity(static_cast<int>(predCov.cols()), static_cast<int>(predCov.cols())) ).llt().matrixL();
+  Matrix L = ( scalingLevel*predCov + (noiseLevel+jitter)*Matrix::Identity(static_cast<int>(predCov.cols()), static_cast<int>(predCov.cols())) ).llt().matrixL();
 
   // Draw samples using the formula:  y = m + L*u
   Matrix samples = predMean.replicate(1,count) + L*uVals;
@@ -574,37 +680,27 @@ Matrix GP::GaussianProcess::getSamples(int count)
 
 
 // Evaluate NLML [public interface]
-double GP::GaussianProcess::computeNLML(const Vector & p, double noise)
+double GP::GaussianProcess::computeNLML(const Vector & p)
 {
   // Compute log-hyperparameters
   Vector logparams(augParamCount);
 
-  if ( !fixedNoise )
-    {
-      logparams(0) = std::log(noise);
-      for ( auto i : boost::irange(1,augParamCount) )
-        logparams(i) = std::log(p(i-1));
-    }
-  else
-    {
-      logparams = logparams.array().log().matrix();
-    }
+  int index = 0;
+  logparams(index++) = std::log(noiseLevel);
+  logparams(index++) = std::log(scalingLevel);
+  for ( auto i : boost::irange(index,augParamCount) )
+    logparams(i) = std::log(p(i-index));
 
   // Evaluate NLML using log-hyperparameters
   return evalNLML(logparams);
 }
 
-// Evaluate NLML with default noise level [public interface]
-double GP::GaussianProcess::computeNLML(const Vector & p)
-{
-  return computeNLML(p, noiseLevel);
-}
 
 // Evaluate NLML with default noise level [public interface]
 double GP::GaussianProcess::computeNLML()
 {
   auto params = (*kernel).getParams();
-  return computeNLML(params, noiseLevel);
+  return computeNLML(params);
 }
 
 

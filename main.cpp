@@ -97,7 +97,7 @@ int main(int argc, char const *argv[])
     
   // Specify observation noise level
   auto noiseLevel = 1.0;
-
+  
   // Define random noise to add to target observations
   //auto noise = sampleNormal(obsCount) * noiseLevel;
   Matrix noise;
@@ -135,12 +135,18 @@ int main(int argc, char const *argv[])
   // Specify solver precision [NEEDS TO BE RE-IMPLMENTED USING "FACTR"]
   //model.setSolverPrecision(1e-8);
 
+  if ( inputDim == 1 )
+    model.setSolverPrecision(1e7);
+  else
+    model.setSolverPrecision(1e8);
+
+  
   // Specify number of restarts for solver
   //model.setSolverRestarts(2);
   
   // Fit covariance kernel hyperparameters to the training data
   time start = high_resolution_clock::now();
-  model.fitModel();  
+  model.fitModel();
   time end = high_resolution_clock::now();
   auto computationTime = getTime(start, end);
 
@@ -150,8 +156,10 @@ int main(int argc, char const *argv[])
 
   // Retrieve the tuned/optimized kernel hyperparameters
   auto optParams = model.getParams();
-  cout << "\nOptimized Hyperparameters:" << endl << optParams.transpose() << "  ";
   auto noiseL = model.getNoise();
+  auto scalingL = model.getScaling();
+  //cout << "\nOptimized Hyperparameters:" << endl << scalingL << " * " << optParams.transpose() << "  ";
+  cout << "\nOptimized Hyperparameters:" << endl << std::sqrt(scalingL) << "**2 * " << optParams.transpose() << "  ";
   cout << "(Noise = " << noiseL << ")\n" << endl;
 
   // Display the negative log marginal likelihood (NLML) of the optimized model

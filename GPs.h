@@ -54,7 +54,10 @@ namespace GP {
     virtual void computeCrossCov(Matrix & K, Matrix & X1, Matrix & X2, Vector & params) = 0;
 
     // Set the noise level which is to be added to the diagonal of the covariance matrix
-    void setNoise(double noise) { noiseLevel = noise; }
+    void setNoise(double noise) { noiseLevel = noise; fixedNoise = true; }
+
+    // Set the scaling level which is to be multiplied into the non-noise terms of the covariance matrix
+    void setScaling(double scaling) { scalingLevel = scaling; fixedScaling = true; }
 
     // Set method for specifying the kernel parameters
     void setParams(Vector params) { kernelParams = params; };
@@ -67,7 +70,12 @@ namespace GP {
     Vector kernelParams;
     int paramCount;
     double noiseLevel;
-    double parseParams(const Vector & params, Vector & kernelParams);
+    double scalingLevel;
+    bool fixedNoise = false;
+    bool fixedScaling = false;
+    //double parseParams(const Vector & params, Vector & kernelParams);
+    //std::vector<double> parseParams(const Vector & params, Vector & kernelParams);
+    void parseParams(const Vector & params, Vector & kernelParams, std::vector<double> & nonKernelParams);
     //virtual double evalKernel(Matrix&, Matrix&, Vector&, int) = 0;
     virtual double evalDistKernel(double, Vector&, int) = 0;
   };
@@ -124,7 +132,6 @@ namespace GP {
     // Compute methods
     void fitModel();
     void predict();
-    double computeNLML(const Vector & p, double noise);
     double computeNLML(const Vector & p);
     double computeNLML();
     
@@ -134,6 +141,7 @@ namespace GP {
     Matrix getSamples(int count=10);
     Vector getParams() { return (*kernel).getParams(); }
     double getNoise() { return noiseLevel; }
+    double getScaling() { return scalingLevel; }
     
 
   private:
@@ -146,6 +154,8 @@ namespace GP {
     Kernel * kernel;
     double noiseLevel = 0.0;
     bool fixedNoise = false;
+    double scalingLevel = 1.0;
+    bool fixedScaling = false;
     double jitter = 1e-10;
 
     // Store Cholsky decomposition
@@ -157,7 +167,8 @@ namespace GP {
     bool fixedBounds = false;
     void parseBounds(Vector & lbs, Vector & ubs, int augParamCount);
     int solverIterations = 1000;
-    double solverPrecision = 7.5e-5;
+    //double solverPrecision = 7.5e-5;
+    double solverPrecision = 1e7;
     double solverRestarts = 0;
       
     // Store squared distance matrix and alpha for NLML/DNLML calculations
@@ -172,6 +183,10 @@ namespace GP {
     Matrix predMean;
     Matrix predCov;
     double NLML = 0.0;
+
+    
+    // Utility function for determining "augmented" solver parameter count
+    int getAugParamCount(int count);
 
     int paramCount;
     int augParamCount;
