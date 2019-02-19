@@ -364,6 +364,18 @@ double GP::GaussianProcess::evalNLML(const Vector & p, Vector & g, bool evalGrad
           //
           //   =  1/2 * trace[  alpha * y^T - I  ]
           //
+          //
+          //  but...    we do have:
+          //  
+          //   dK'/dt  =  d/dt[s*K]  =  s * K  =  K' - n*I
+          //
+          //  so that the (corected) calculation above still yields:
+          //
+          //   =  1/2 * trace[  (alpha * y^T - I)  -  n * term  ]
+          //
+          //  and the trace of "term" has already been calculated...
+          //
+          //
           //double trace = 0.0;
           //for ( auto i : boost::irange(0,n) )
           //  trace -= _alpha(i)*obsY(i);
