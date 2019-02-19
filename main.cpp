@@ -132,9 +132,7 @@ int main(int argc, char const *argv[])
   RBF kernel;
   model.setKernel(kernel);
 
-  // Specify solver precision [NEEDS TO BE RE-IMPLMENTED USING "FACTR"]
-  //model.setSolverPrecision(1e-8);
-
+  // Specify solver precision
   if ( inputDim == 1 )
    model.setSolverPrecision(1e9);
   
@@ -148,7 +146,7 @@ int main(int argc, char const *argv[])
   auto computationTime = getTime(start, end);
 
   // Display computation time required for fitting the GP model
-  cout << "\nComputation Time: ";
+  cout << "\nComputation Time:  ";
   cout << computationTime << " s" << endl;
 
   // Retrieve the tuned/optimized kernel hyperparameters

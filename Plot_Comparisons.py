@@ -9,33 +9,6 @@ import time
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 
-# Function for converting time to formatted string
-def convert_time(t):
-    minutes = np.floor((t/3600.0) * 60)
-    seconds = np.ceil(((t/3600.0) * 60 - minutes) * 60)
-    if (minutes >= 1):
-        minutes = np.floor(t/60.0)
-        seconds = np.ceil((t/60.0 - minutes) * 60)
-        t_str = str(int(minutes)).rjust(2) + 'm  ' + \
-                str(int(seconds)).rjust(2) + 's'
-    else:
-        seconds = (t/60.0 - minutes) * 60
-        t_str = str(seconds) + 's'
-    return t_str
-
-# Define function for removing axes from MatPlotLib plots
-def remove_axes(ax):
-    # make the panes transparent
-    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    # make the grid lines transparent
-    ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-    ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-    ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-    # remove axes
-    ax._axis3don = False
-
 
 # Plot results of CppGPs, SciKit Learn, and GPyTorch
 def main():
@@ -44,7 +17,7 @@ def main():
     USE_SciKit_Learn = True
 
     # Specify whether or not to compare GPyTorch results
-    USE_GPyTorch = True
+    USE_GPyTorch = False
     
     # First determine the dimension of the input values
     filename = "predictions.csv"
@@ -226,8 +199,6 @@ def main():
         plt.show()
 
 
-
-
     
     
     elif inputDim == 2:
@@ -241,8 +212,23 @@ def main():
             plot_X_flat.append(inVals[n,0])
             plot_Y_flat.append(inVals[n,1])
 
+
+        if (not USE_SciKit_Learn) and (not USE_GPyTorch):
+            plot_count = 1
+        elif (not USE_GPyTorch):
+            plot_count = 2
+        elif (not USE_SciKit_Learn):
+            plot_count = 2
+        else:
+            plot_count = 3
+            
         tri_fig = plt.figure()
-        tri_ax1 = tri_fig.add_subplot(121, projection='3d')
+        if plot_count == 1:
+            tri_ax1 = tri_fig.add_subplot(111, projection='3d')
+        elif plot_count == 2:
+            tri_ax1 = tri_fig.add_subplot(121, projection='3d')
+        elif plot_count == 3:
+            tri_ax1 = tri_fig.add_subplot(131, projection='3d')
         linewidth = 0.1
         cmap = "Blues"
 
@@ -252,16 +238,21 @@ def main():
         tri_ax1.set_title(pred_title, fontsize=24)
 
         if USE_SciKit_Learn:
-            # Plot SciKit Learn results    
-            tri_ax2 = tri_fig.add_subplot(122, projection='3d')
+            # Plot SciKit Learn results
+            if plot_count == 2:
+                tri_ax2 = tri_fig.add_subplot(122, projection='3d')
+            elif plot_count == 3:
+                tri_ax2 = tri_fig.add_subplot(132, projection='3d')
             tri_ax2.plot_trisurf(plot_X_flat,plot_Y_flat, skl_predMean, cmap=cmap, linewidth=linewidth, antialiased=True)
             soln_title = "SciKit Learn"
             tri_ax2.set_title(soln_title, fontsize=24)
 
         if USE_GPyTorch:
-            fig = plt.figure()
-            # Plot GPyTorch Learn results    
-            tri_ax3 = fig.add_subplot(111, projection='3d')
+            # Plot GPyTorch Learn results
+            if plot_count == 2:
+                tri_ax3 = tri_fig.add_subplot(122, projection='3d')
+            elif plot_count == 3:
+                tri_ax3 = tri_fig.add_subplot(133, projection='3d')
             tri_ax3.plot_trisurf(plot_X_flat,plot_Y_flat, gpy_predMean, cmap=cmap, linewidth=linewidth, antialiased=True)
             soln_title = "GPyTorch Learn"
             tri_ax3.set_title(soln_title, fontsize=24)
@@ -273,28 +264,14 @@ def main():
         if USE_GPyTorch:
             remove_axes(tri_ax3)
 
-        if USE_SciKit_Learn:            
-            # Bind axes for comparison
-            def tri_on_move(event):
-                if event.inaxes == tri_ax1:
-                    if tri_ax1.button_pressed in tri_ax1._rotate_btn:
-                        tri_ax2.view_init(elev=tri_ax1.elev, azim=tri_ax1.azim)
-                    elif tri_ax1.button_pressed in tri_ax1._zoom_btn:
-                        tri_ax2.set_xlim3d(tri_ax1.get_xlim3d())
-                        tri_ax2.set_ylim3d(tri_ax1.get_ylim3d())
-                        tri_ax2.set_zlim3d(tri_ax1.get_zlim3d())
-                elif event.inaxes == tri_ax2:
-                    if tri_ax2.button_pressed in tri_ax2._rotate_btn:
-                        tri_ax1.view_init(elev=tri_ax2.elev, azim=tri_ax2.azim)
-                    elif tri_ax2.button_pressed in tri_ax2._zoom_btn:
-                        tri_ax1.set_xlim3d(tri_ax2.get_xlim3d())
-                        tri_ax1.set_ylim3d(tri_ax2.get_ylim3d())
-                        tri_ax1.set_zlim3d(tri_ax2.get_zlim3d())
-                else:
-                    return
-                tri_fig.canvas.draw_idle()
-            tri_c1 = tri_fig.canvas.mpl_connect('motion_notify_event', tri_on_move)
-
+        if plot_count == 2:
+            if USE_SciKit_Learn:
+                canvas = bind_axes(tri_fig, tri_ax1, tri_ax2)
+            else:
+                canvas = bind_axes(tri_fig, tri_ax1, tri_ax3)
+        elif plot_count == 3:
+            canvas = bind_axes_3(tri_fig, tri_ax1, tri_ax2, tri_ax3)
+            
 
 
         """ Zoom in to view predictive uncertainty """
@@ -381,6 +358,83 @@ def main():
         # Display plots
         plt.show()
     
+
+# Define function for removing axes from MatPlotLib plots
+def remove_axes(ax):
+    # make the panes transparent
+    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    # make the grid lines transparent
+    ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+    ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+    ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+    # remove axes
+    ax._axis3don = False
+
+        
+# Update rotation
+def update_rotation(target_ax, source_ax):
+    target_ax.view_init(elev=source_ax.elev, azim=source_ax.azim)
+
+# Update zoom
+def update_zoom(target_ax, source_ax):
+    target_ax.set_xlim3d(source_ax.get_xlim3d())
+    target_ax.set_ylim3d(source_ax.get_ylim3d())
+    target_ax.set_zlim3d(source_ax.get_zlim3d())
+
+# Bind MatPlotLib Axes [2 Plots]
+def bind_axes(fig, ax1, ax2):
+    
+    # Bind axes for comparison
+    def bind_on_move(event):
+        if event.inaxes == ax1:
+            if ax1.button_pressed in ax1._rotate_btn:
+                update_rotation(ax2,ax1)
+            elif ax1.button_pressed in ax1._zoom_btn:
+                update_zoom(ax2,ax1)
+        elif event.inaxes == ax2:
+            if ax2.button_pressed in ax2._rotate_btn:
+                update_rotation(ax1,ax2)
+            elif ax2.button_pressed in ax2._zoom_btn:
+                update_zoom(ax1,ax2)
+        else:
+            return
+        fig.canvas.draw_idle()
+    canvas = fig.canvas.mpl_connect('motion_notify_event', bind_on_move)
+    return canvas
+
+# Bind MatPlotLib Axes [3 Plots]
+def bind_axes_3(fig, ax1, ax2, ax3):
+    
+    # Bind axes for comparison
+    def bind_on_move(event):
+        if event.inaxes == ax1:
+            if ax1.button_pressed in ax1._rotate_btn:
+                update_rotation(ax2,ax1)
+                update_rotation(ax3,ax1)
+            elif ax1.button_pressed in ax1._zoom_btn:
+                update_zoom(ax2,ax1)
+                update_zoom(ax3,ax1)
+        elif event.inaxes == ax2:
+            if ax2.button_pressed in ax2._rotate_btn:
+                update_rotation(ax1,ax2)
+                update_rotation(ax3,ax2)
+            elif ax2.button_pressed in ax2._zoom_btn:
+                update_zoom(ax1,ax2)
+                update_zoom(ax3,ax2)
+        elif event.inaxes == ax3:
+            if ax3.button_pressed in ax3._rotate_btn:
+                update_rotation(ax1,ax3)
+                update_rotation(ax2,ax3)
+            elif ax3.button_pressed in ax3._zoom_btn:
+                update_zoom(ax1,ax3)
+                update_zoom(ax2,ax3)
+        else:
+            return
+        fig.canvas.draw_idle()
+    canvas = fig.canvas.mpl_connect('motion_notify_event', bind_on_move)
+    return canvas
 
 
 # Run main() function when called directly
