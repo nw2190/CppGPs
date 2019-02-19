@@ -21,6 +21,26 @@ with open(filename, "r") as csvfile:
     nonInputLength = 3
     inputDim = len(row) - nonInputLength
 
+
+# Get prediction data
+filename = "predictions.csv"
+inVals = []; trueVals = []; predMean = []; predStd = []
+with open(filename, "r") as csvfile:
+    csvreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+    for row in csvreader:
+
+        if inputDim == 2:
+            i1, i2, t, m, v = row
+            inVals.append([i1,i2])
+        else:
+            i, t, m, v = row
+            inVals.append(i)
+
+        trueVals.append(t)
+        predMean.append(m)
+        predStd.append(v)
+inVals = np.array(inVals).astype(np.float32)
+
 ## Get observation data
 filename = "observations.csv"
 obsX = []; obsY = []
@@ -68,7 +88,8 @@ def applyFunc(func, Tensor):
     return result
 
 # Specify observation count and input dimension
-obsCount = 250
+#obsCount = 250
+obsCount = obsX.shape[0]
 
 # Construct noise for observation data
 noiseLevel = 1.0
@@ -145,9 +166,10 @@ print("NLML = {:.4f}\n".format(NLML))
 
 # Specify the input mesh for testing
 predCount = 100
-testMesh = torch.linspace(-1.0, 1.0, steps=predCount)
-testMesh = testMesh.unsqueeze(0)
-testMesh = torch.transpose(testMesh, 0, 1)
+#testMesh = torch.linspace(-1.0, 1.0, steps=predCount)
+#testMesh = testMesh.unsqueeze(0)
+#testMesh = torch.transpose(testMesh, 0, 1)
+testMesh = torch.from_numpy(inVals)
 
 # Define true solution values on test mesh
 trueSoln = applyFunc(targetFunc, testMesh)
@@ -161,9 +183,10 @@ pred_mean = posterior_distribution.mean
 pred_var = posterior_distribution.variance
 pred_covar = posterior_distribution.covariance_matrix
 
-# Get sample paths from posterior
-sampleCount = 25
-samples = posterior_distribution.rsample(sample_shape=torch.Size([sampleCount]))
+if inputDim == 1:
+    # Get sample paths from posterior
+    sampleCount = 25
+    samples = posterior_distribution.rsample(sample_shape=torch.Size([sampleCount]))
 
 
 
@@ -184,10 +207,12 @@ with torch.no_grad():
     predStd = np.sqrt(pred_var.detach().numpy())
     np.save(filename, predStd)
 
-    # Save posterior samples
-    filename = os.path.join(GPyTorch_results_dir, "samples.npy")
-    samples = samples.detach().numpy()
-    np.save(filename, samples)
+
+    if inputDim == 1:
+        # Save posterior samples
+        filename = os.path.join(GPyTorch_results_dir, "samples.npy")
+        samples = samples.detach().numpy()
+        np.save(filename, samples)
 
     # Save NLML
     filename = os.path.join(GPyTorch_results_dir, "NLML.npy")

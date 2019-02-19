@@ -44,7 +44,7 @@ def main():
     USE_SciKit_Learn = True
 
     # Specify whether or not to compare GPyTorch results
-    USE_GPyTorch = False
+    USE_GPyTorch = True
     
     # First determine the dimension of the input values
     filename = "predictions.csv"
@@ -251,36 +251,49 @@ def main():
         pred_title = "CppGPs"
         tri_ax1.set_title(pred_title, fontsize=24)
 
-        # Plot SciKit Learn results    
-        tri_ax2 = tri_fig.add_subplot(122, projection='3d')
-        tri_ax2.plot_trisurf(plot_X_flat,plot_Y_flat, mean, cmap=cmap, linewidth=linewidth, antialiased=True)
-        soln_title = "SciKit Learn"
-        tri_ax2.set_title(soln_title, fontsize=24)
+        if USE_SciKit_Learn:
+            # Plot SciKit Learn results    
+            tri_ax2 = tri_fig.add_subplot(122, projection='3d')
+            tri_ax2.plot_trisurf(plot_X_flat,plot_Y_flat, skl_predMean, cmap=cmap, linewidth=linewidth, antialiased=True)
+            soln_title = "SciKit Learn"
+            tri_ax2.set_title(soln_title, fontsize=24)
 
+        if USE_GPyTorch:
+            fig = plt.figure()
+            # Plot GPyTorch Learn results    
+            tri_ax3 = fig.add_subplot(111, projection='3d')
+            tri_ax3.plot_trisurf(plot_X_flat,plot_Y_flat, gpy_predMean, cmap=cmap, linewidth=linewidth, antialiased=True)
+            soln_title = "GPyTorch Learn"
+            tri_ax3.set_title(soln_title, fontsize=24)
+        
         # Remove axes from plots
-        remove_axes(tri_ax1) 
-        remove_axes(tri_ax2) 
+        remove_axes(tri_ax1)
+        if USE_SciKit_Learn:
+            remove_axes(tri_ax2)
+        if USE_GPyTorch:
+            remove_axes(tri_ax3)
 
-        # Bind axes for comparison
-        def tri_on_move(event):
-            if event.inaxes == tri_ax1:
-                if tri_ax1.button_pressed in tri_ax1._rotate_btn:
-                    tri_ax2.view_init(elev=tri_ax1.elev, azim=tri_ax1.azim)
-                elif tri_ax1.button_pressed in tri_ax1._zoom_btn:
-                    tri_ax2.set_xlim3d(tri_ax1.get_xlim3d())
-                    tri_ax2.set_ylim3d(tri_ax1.get_ylim3d())
-                    tri_ax2.set_zlim3d(tri_ax1.get_zlim3d())
-            elif event.inaxes == tri_ax2:
-                if tri_ax2.button_pressed in tri_ax2._rotate_btn:
-                    tri_ax1.view_init(elev=tri_ax2.elev, azim=tri_ax2.azim)
-                elif tri_ax2.button_pressed in tri_ax2._zoom_btn:
-                    tri_ax1.set_xlim3d(tri_ax2.get_xlim3d())
-                    tri_ax1.set_ylim3d(tri_ax2.get_ylim3d())
-                    tri_ax1.set_zlim3d(tri_ax2.get_zlim3d())
-            else:
-                return
-            tri_fig.canvas.draw_idle()
-        tri_c1 = tri_fig.canvas.mpl_connect('motion_notify_event', tri_on_move)
+        if USE_SciKit_Learn:            
+            # Bind axes for comparison
+            def tri_on_move(event):
+                if event.inaxes == tri_ax1:
+                    if tri_ax1.button_pressed in tri_ax1._rotate_btn:
+                        tri_ax2.view_init(elev=tri_ax1.elev, azim=tri_ax1.azim)
+                    elif tri_ax1.button_pressed in tri_ax1._zoom_btn:
+                        tri_ax2.set_xlim3d(tri_ax1.get_xlim3d())
+                        tri_ax2.set_ylim3d(tri_ax1.get_ylim3d())
+                        tri_ax2.set_zlim3d(tri_ax1.get_zlim3d())
+                elif event.inaxes == tri_ax2:
+                    if tri_ax2.button_pressed in tri_ax2._rotate_btn:
+                        tri_ax1.view_init(elev=tri_ax2.elev, azim=tri_ax2.azim)
+                    elif tri_ax2.button_pressed in tri_ax2._zoom_btn:
+                        tri_ax1.set_xlim3d(tri_ax2.get_xlim3d())
+                        tri_ax1.set_ylim3d(tri_ax2.get_ylim3d())
+                        tri_ax1.set_zlim3d(tri_ax2.get_zlim3d())
+                else:
+                    return
+                tri_fig.canvas.draw_idle()
+            tri_c1 = tri_fig.canvas.mpl_connect('motion_notify_event', tri_on_move)
 
 
 

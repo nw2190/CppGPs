@@ -85,8 +85,8 @@ int main(int argc, char const *argv[])
   //
 
   // Specify the input dimensions
-  int inputDim = 1;
-  //int inputDim = 2;
+  //int inputDim = 1;
+  int inputDim = 2;
   
   // Specify observation data count
   int obsCount;

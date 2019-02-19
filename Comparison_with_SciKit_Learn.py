@@ -144,9 +144,10 @@ def main():
     filename = os.path.join(SciKit_Learn_results_dir, "predStd.npy")
     np.save(filename, std)
 
-    # Save posterior samples
-    filename = os.path.join(SciKit_Learn_results_dir, "samples.npy")
-    np.save(filename, model_samples)
+    if inputDim == 1:
+        # Save posterior samples
+        filename = os.path.join(SciKit_Learn_results_dir, "samples.npy")
+        np.save(filename, model_samples)
 
     # Save NLML
     filename = os.path.join(SciKit_Learn_results_dir, "NLML.npy")
