@@ -145,6 +145,9 @@ namespace GP {
     
 
   private:
+
+    // Specify whether or not to display debugging and time diagnostic information
+    bool VERBOSE = false;
     
     // Private member functions
     double evalNLML(const Vector & p); 

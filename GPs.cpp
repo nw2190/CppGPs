@@ -589,8 +589,11 @@ void GP::GaussianProcess::fitModel()
   LBFGSpp::LBFGSSolver<double> finalsolver(finalparam);
   niter = finalsolver.minimize(*this, optParams, optVal);
 
-  std::cout << "\n[*] Solver Iterations = " << niter <<std::endl;
-  std::cout << "\n[*] Function Evaluations = " << gradientEvals <<std::endl;
+  if ( VERBOSE )
+    {
+      std::cout << "\n[*] Solver Iterations = " << niter <<std::endl;
+      std::cout << "\n[*] Function Evaluations = " << gradientEvals <<std::endl;
+    }
   
   // ASSUME OPTIMIZATION OVER LOG VALUES
   optParams = optParams.array().exp().matrix();
@@ -622,18 +625,19 @@ void GP::GaussianProcess::fitModel()
 
 
   // DISPLAY TIMING INFORMATION
-  ///*
-  std::cout << "\n Time Diagnostics |\n";
-  std::cout << "------------------\n";
-  std::cout << "computeCov():\t  " << time_computecov/gradientEvals  << std::endl;
-  std::cout << "cholesky.llt():\t  " << time_cholesky_llt/gradientEvals  << std::endl;
-  std::cout << "_alpha term:\t  " << time_alpha/gradientEvals  << std::endl;
-  std::cout << "NLML:\t  \t  " << time_NLML/gradientEvals  << std::endl;
-  std::cout << "Grad term:\t  " << time_term/gradientEvals  << std::endl;
-  std::cout << "Gradient:\t  " << time_grad/gradientEvals  << std::endl;
-  std::cout << "\nEvaluation:\t  " << time_evaluation/gradientEvals  << std::endl;
-  //*/
-  std::cout << std::endl << optParams.transpose() << std::endl;  
+  if ( VERBOSE )
+    {
+      std::cout << "\n Time Diagnostics |\n";
+      std::cout << "------------------\n";
+      std::cout << "computeCov():\t  " << time_computecov/gradientEvals  << std::endl;
+      std::cout << "cholesky.llt():\t  " << time_cholesky_llt/gradientEvals  << std::endl;
+      std::cout << "_alpha term:\t  " << time_alpha/gradientEvals  << std::endl;
+      std::cout << "NLML:\t  \t  " << time_NLML/gradientEvals  << std::endl;
+      std::cout << "Grad term:\t  " << time_term/gradientEvals  << std::endl;
+      std::cout << "Gradient:\t  " << time_grad/gradientEvals  << std::endl;
+      std::cout << "\nEvaluation:\t  " << time_evaluation/gradientEvals  << std::endl;
+    }
+  
   
 };
 

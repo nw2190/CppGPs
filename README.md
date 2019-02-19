@@ -30,7 +30,7 @@ The `main.cpp` file provides an example use of the CppGP code for Gaussian proce
 
 Once these steps are completed, the example code can be compiled and run as follows:
 ```console
-user@host $ make all
+user@host $ make install
 g++ -c -Wall  -std=c++17 -I/usr/include/eigen3 -g -march=native -fopenmp -O3 main.cpp -o main.o
 g++ -c -Wall  -std=c++17 -I/usr/include/eigen3 -g -march=native -fopenmp -O3 GPs.cpp -o GPs.o
 g++ -std=c++17 -I/usr/include/eigen3 -g -march=native -fopenmp -O3 -o Run main.cpp GPs.cpp
