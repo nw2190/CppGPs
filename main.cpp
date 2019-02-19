@@ -85,8 +85,8 @@ int main(int argc, char const *argv[])
   //
 
   // Specify the input dimensions
-  //int inputDim = 1;
-  int inputDim = 2;
+  int inputDim = 1;
+  //int inputDim = 2;
   
   // Specify observation data count
   int obsCount;
@@ -160,7 +160,8 @@ int main(int argc, char const *argv[])
   cout << "(Noise = " << noiseL << ")\n" << endl;
 
   // Display the negative log marginal likelihood (NLML) of the optimized model
-  cout << "NLML:  " << std::fixed << std::setprecision(4) << model.computeNLML() << endl << endl;
+  double NLML = model.computeNLML();
+  cout << "NLML:  " << std::fixed << std::setprecision(4) << NLML << endl << endl;
 
   
   //
@@ -244,6 +245,11 @@ int main(int argc, char const *argv[])
       fout.close();
     }
 
+  // Save NLML to file
+  std::string NLMLFile = "NLML.csv";
+  fout.open(NLMLFile);
+  fout << NLML;
+  fout.close();
   
   return 0;
   

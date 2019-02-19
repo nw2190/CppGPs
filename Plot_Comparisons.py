@@ -37,12 +37,15 @@ def remove_axes(ax):
     ax._axis3don = False
 
 
-# Evaluate SciKit Learn Gaussian Process Regressor and Plot Results
+# Plot results of CppGPs, SciKit Learn, and GPyTorch
 def main():
 
     # Specify whether or not to compare GPyTorch results
     USE_GPyTorch = True
 
+    # Specify whether or not to compare SciKit Learn results
+    USE_SciKit_Learn = True
+    
     # First determine the dimension of the input values
     filename = "predictions.csv"
     with open(filename, "r") as csvfile:
@@ -102,7 +105,16 @@ def main():
                 samples.append(vals)
         samples = np.array(samples).astype(np.float64)
     
+    filename = "NLML.csv"
+    NLML_tmp = []
+    with open(filename, "r") as csvfile:
+        csvreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        for row in csvreader:
+            vals = np.array(row, dtype=np.float32)
+            NLML_tmp.append(vals)
+    NLML = NLML_tmp[0][0]
 
+    
     if USE_GPyTorch:
 
         GPyTorch_results_dir = "./GPyTorch_Results/"
@@ -120,55 +132,46 @@ def main():
             gpy_samples = np.load(filename)
             gpy_samples = np.transpose(gpy_samples,[1,0])
 
+        filename = os.path.join(GPyTorch_results_dir, "NLML.npy")
+        gpy_NLML = np.load(filename)
+            
 
+            
+    if USE_SciKit_Learn:
+
+        SciKit_Learn_results_dir = "./SciKit_Learn_Results/"
         
-    ### SCIKIT LEARN IMPLEMENTATION
-    X = np.reshape(obsX, [-1, inputDim])
-    Y = np.reshape(obsY, [-1])
-    Xtest = np.reshape(inVals, [-1, inputDim])
+        # Get SciKit Learn prediction data
+        filename = os.path.join(SciKit_Learn_results_dir, "predMean.npy")
+        skl_predMean = np.load(filename)
 
-    # Model parameters
-    n_restarts = 0
-    normalize_y = False
-    use_white_noise = True
-    RBF_bounds = [0.01, 100.0]
-    Noise_bounds = [0.00001, 20.0]
-    jitter = 1e-7
+        filename = os.path.join(SciKit_Learn_results_dir, "predStd.npy")
+        skl_predStd = np.load(filename)
+        
+        if inputDim == 1:
+            # Get posterior samples
+            filename = os.path.join(SciKit_Learn_results_dir, "samples.npy")
+            skl_samples = np.load(filename)
 
-    # Define kernel for SciKit Learn Gaussian process regression model
-    kernel = ConstantKernel(constant_value=1.0, constant_value_bounds=(0.0, 10.0)) * RBF(length_scale=1.0, length_scale_bounds=(RBF_bounds[0],RBF_bounds[1])) + \
-        WhiteKernel(noise_level=1, noise_level_bounds=(Noise_bounds[0], Noise_bounds[1]))
+        filename = os.path.join(SciKit_Learn_results_dir, "NLML.npy")
+        skl_NLML = np.load(filename)
+            
 
-    #if use_white_noise:
-    #    kernel = RBF(length_scale=1.0, length_scale_bounds=(RBF_bounds[0],RBF_bounds[1])) + \
-    #        WhiteKernel(noise_level=1, noise_level_bounds=(Noise_bounds[0], Noise_bounds[1]))
-    #else:
-    #    kernel = RBF(length_scale=1.0, length_scale_bounds=(RBF_bounds[0],RBF_bounds[1]))
-
-    # Fit model to data
-    start_time = time.time()
-    model = GaussianProcessRegressor(kernel=kernel, alpha=jitter, optimizer='fmin_l_bfgs_b',
-                                     normalize_y=normalize_y, n_restarts_optimizer=n_restarts).fit(X, Y)
-    end_time = time.time()
-
-    # Display computation time 
-    time_elapsed = convert_time(end_time-start_time)
-    print('\nComputation Time:  '  + time_elapsed + '\n') 
-
-    print("Optimized Kernel Parameters:")
-    print(model.kernel_)
-    print(" ")
-    mean, std = model.predict(Xtest, return_std=True)
-
-    if inputDim == 1:
-        model_samples = model.sample_y(Xtest, samples.shape[0])
-
-    NLML = -model.log_marginal_likelihood()
-    print("NLML:  {:.4f}\n".format(NLML))
+    ###                          ###
+    ###       DISPLAY NLML       ###
+    ###                          ###
 
 
-
-
+    print("\n")
+    print("CppGPs NLML:        {:.4f}".format(NLML))
+    if USE_SciKit_Learn:
+        print("\nSciKit Learn NLML:  {:.4f}".format(skl_NLML))
+    if USE_GPyTorch:
+        print("\nGPyTorch NLML:      {:.4f}".format(gpy_NLML))
+    print("\n")
+    
+    
+        
     ###                          ###
     ###       PLOT RESULTS       ###
     ###                          ###
@@ -177,21 +180,22 @@ def main():
 
         """ ONE-DIMENSIONAL PLOTS """
         
-        # Plot Scikit Learn results
+
+        # Plot SciKit Learn results
         plt.figure()
-        plt.plot(inVals, mean, 'C0', linewidth=2.0)
+        plt.plot(inVals, skl_predMean, 'C0', linewidth=2.0)
         alpha = 0.075
         for k in [1,2,3]:
-            plt.fill_between(inVals, mean-k*std, mean+k*std, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
+            plt.fill_between(inVals, skl_predMean-k*skl_predStd, skl_predMean+k*skl_predStd, where=1 >= 0, facecolor="C0", alpha=alpha, interpolate=True, label=None)
         plt.plot(inVals, trueVals, 'C1', linewidth=1.0, linestyle="dashed")
         alpha_scatter = 0.5
         plt.scatter(obsX, obsY, alpha=alpha_scatter)
-        for i in range(0,model_samples.shape[1]):
-            plt.plot(inVals, model_samples[:,i], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
-        plt.suptitle("Scikit Learn Implementation")
+        for i in range(0,skl_samples.shape[1]):
+            plt.plot(inVals, skl_samples[:,i], 'C0', alpha=0.2, linewidth=1.0, linestyle="dashed")
+        plt.suptitle("SciKit Learn Implementation")
 
-
-        # Plot Scikit Learn results
+        
+        # Plot GPyTorch results
         plt.figure()
         plt.plot(inVals, gpy_predMean, 'C0', linewidth=2.0)
         alpha = 0.075

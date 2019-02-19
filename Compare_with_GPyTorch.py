@@ -102,7 +102,7 @@ optimizer = torch.optim.Adam([ {'params': model.parameters()}, ], lr=learning_ra
 mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
 
 # Specify number of training iterations and define training loop
-training_iter = 750
+training_iter = 250
 for i in range(training_iter):
     optimizer.zero_grad()
     output = model(train_x)
@@ -188,3 +188,8 @@ with torch.no_grad():
     filename = os.path.join(GPyTorch_results_dir, "samples.npy")
     samples = samples.detach().numpy()
     np.save(filename, samples)
+
+    # Save NLML
+    filename = os.path.join(GPyTorch_results_dir, "NLML.npy")
+    np.save(filename, NLML)
+    
