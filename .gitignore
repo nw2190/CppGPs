@@ -158,8 +158,8 @@ tests/SciKit_Learn_Results/*
 
 gpytorch_results
 gpytorch_results/*
-SciKit_Learn_results
-SciKit_Learn_results/*
+scikit_learn_results
+scikit_learn_results/*
 tests/gpytorch_results
 tests/gpytorch_results/*
 tests/scikit_learn_results
