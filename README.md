@@ -15,7 +15,7 @@ Implementation of Numerical Gaussian Processes in C++
 #### Optional Dependencies for SciKit Learn / GPyTorch Comparisons
 * [SciKit Learn](https://scikit-learn.org/stable/) - Data analysis library for Python
 * [PyTorch](https://pytorch.org/) - Open source deep learning platform
-* [GPyTorch](https://github.com/cornellius-gp/gpytorch) - Efficient implementation of Gaussian processes in PyTorch
+* [GPyTorch](https://github.com/cornellius-gp/gpytorch) - PyTorch implementation of Gaussian processes with extensive modeling capabilities
 
 
 ## Gaussian Process Regression

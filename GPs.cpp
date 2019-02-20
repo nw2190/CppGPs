@@ -639,9 +639,9 @@ void GP::GaussianProcess::fitModel()
       std::cout << "Gradient:\t  " << time_grad/gradientEvals  << std::endl;
       std::cout << "\nEvaluation:\t  " << time_evaluation/gradientEvals  << std::endl;
     }
-  
-  
+    
 };
+
 
 // Compute predicted values
 void GP::GaussianProcess::predict()
@@ -695,8 +695,7 @@ Matrix GP::GaussianProcess::getSamples(int count)
     }
 
   // Compute Cholesky factor L
-  //Matrix L = ( predCov + (noiseLevel+jitter)*Matrix::Identity(static_cast<int>(predCov.cols()), static_cast<int>(predCov.cols())) ).llt().matrixL();
-  Matrix L = ( scalingLevel*predCov + (noiseLevel+jitter)*Matrix::Identity(static_cast<int>(predCov.cols()), static_cast<int>(predCov.cols())) ).llt().matrixL();
+  Matrix L = ( predCov + (noiseLevel+jitter)*Matrix::Identity(static_cast<int>(predCov.cols()), static_cast<int>(predCov.cols())) ).llt().matrixL();
 
   // Draw samples using the formula:  y = m + L*u
   Matrix samples = predMean.replicate(1,count) + L*uVals;
