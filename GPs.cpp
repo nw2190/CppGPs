@@ -535,9 +535,9 @@ void GP::GaussianProcess::fitModel()
   param.linesearch  = LBFGSpp::LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE;
   param.m = 10;
   param.epsilon = 1e-6;
-  param.max_iterations = 20;
+  param.max_iterations = 10;
   param.max_linesearch = 5;
-  param.ftol = 1e-4;
+  param.delta = 1e-4;
 
   int niter;
   
@@ -583,8 +583,10 @@ void GP::GaussianProcess::fitModel()
   double eps = 2.220446049250313e-16;
   double factr = solverPrecision;
   finalparam.past = 1;
-  finalparam.ftol = factr*eps;
-
+  //finalparam.ftol = factr*eps;
+  finalparam.delta = factr*eps;
+  finalparam.max_iterations = 100;
+  
   // Create solver and function object
   LBFGSpp::LBFGSSolver<double> finalsolver(finalparam);
   niter = finalsolver.minimize(*this, optParams, optVal);

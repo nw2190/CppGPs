@@ -91,7 +91,7 @@ def main():
             
     if USE_SciKit_Learn:
 
-        SciKit_Learn_results_dir = "./SciKit_Learn_Results/"
+        SciKit_Learn_results_dir = "./scikit_learn_results/"
         
         # Get SciKit Learn prediction data
         filename = os.path.join(SciKit_Learn_results_dir, "predMean.npy")
@@ -111,7 +111,7 @@ def main():
 
     if USE_GPyTorch:
 
-        GPyTorch_results_dir = "./GPyTorch_Results/"
+        GPyTorch_results_dir = "./gpytorch_results/"
         
         # Get GPyTorch prediction data
         filename = os.path.join(GPyTorch_results_dir, "predMean.npy")

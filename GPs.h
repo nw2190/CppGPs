@@ -170,6 +170,7 @@ namespace GP {
     bool fixedBounds = false;
     void parseBounds(Vector & lbs, Vector & ubs, int augParamCount);
     int solverIterations = 1000;
+    //double solverPrecision = 1e8;
     double solverPrecision = 1e8;
     double solverRestarts = 0;
       

@@ -6,6 +6,8 @@ import os
 import csv
 import time
 
+# Option to verify the CppGPs NLML calculation using the SciKit Learn framework
+VERIFY_NLML = False
 
 # Evaluate SciKit Learn Gaussian Process Regressor on CppGPs training data
 def main():
@@ -53,9 +55,26 @@ def main():
     NLML = -model.log_marginal_likelihood()
     print("NLML:  {:.4f}\n".format(NLML))
 
+
+
+    # Test the NLML calculation from the CppGPs optimal parameter results    
+    if VERIFY_NLML:
+        filename = "params.csv"
+        params = []
+        with open(filename, "r") as csvfile:
+            csvreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+            for row in csvreader:
+                p = row
+        params.append(np.array(p))
+        params = np.array(params[0]).astype(np.float64)
+        theta = np.log(params)
+        CppGPs_NLML = -model.log_marginal_likelihood(theta = theta)
+        print("CppGPs NLML = {:.4f}\n".format(CppGPs_NLML))
+    
+
     
     # Save results to file
-    SciKit_Learn_results_dir = "./SciKit_Learn_Results/"
+    SciKit_Learn_results_dir = "./scikit_learn_results/"
 
     if not os.path.exists(SciKit_Learn_results_dir):
         os.makedirs(SciKit_Learn_results_dir)

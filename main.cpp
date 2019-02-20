@@ -85,8 +85,8 @@ int main(int argc, char const *argv[])
   //
 
   // Specify the input dimensions
-  int inputDim = 1;
-  //int inputDim = 2;
+  //int inputDim = 1;
+  int inputDim = 2;
   
   // Specify observation data count
   int obsCount;
@@ -133,11 +133,12 @@ int main(int argc, char const *argv[])
   model.setKernel(kernel);
 
   // Specify solver precision
-  if ( inputDim == 1 )
-   model.setSolverPrecision(1e9);
+  //if ( inputDim == 1 )
+  //  model.setSolverPrecision(1e7);
   
   // Specify number of restarts for solver
-  //model.setSolverRestarts(2);
+  if ( inputDim == 1 )
+    model.setSolverRestarts(2);
   
   // Fit covariance kernel hyperparameters to the training data
   time start = high_resolution_clock::now();
@@ -248,7 +249,18 @@ int main(int argc, char const *argv[])
   fout.open(NLMLFile);
   fout << NLML;
   fout.close();
+
+  // Save optimized hyperparameters to file
+  std::string paramFile = "params.csv";
+  fout.open(paramFile);
+  fout << std::fixed << std::setprecision(32) << scalingL << ",";
+  for ( auto i : boost::irange(0,static_cast<int>(optParams.size())) )
+    fout << optParams(i) << ",";
+  fout << noiseL;
+  fout.close();
+
   
+
   return 0;
   
 }
