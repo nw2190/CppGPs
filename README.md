@@ -1,4 +1,4 @@
-# CppGPs - C++ Gaussian Process Library
+# CppGP - C++ Gaussian Process Library
 Implementation of Numerical Gaussian Processes in C++
 
 ## Dependencies
@@ -131,15 +131,22 @@ For the two dimensional case (i.e. when `inputDim=2` in the `main.cpp` file), an
 
 ### Comparison with SciKit Learn Implementation
 
-The results of the CppGP code and SciKit Learn `GaussianProcessRegressor` class can be compared using the `SciKit_Learn_Comparison.py` Python script.  This code provides the estimated kernel/noise parameters and negative log marginal likelihood (NLML) calculations in addition to plots of the CppGP and SciKit Learn results.
-
+The results of the CppGP code and SciKit Learn `GaussianProcessRegressor` class can be compared using the `Comparison_with_SciKit_Learn.py` Python script.  This code provides the estimated kernel/noise parameters and corresponding negative log marginal likelihood (NLML) calculations using the SciKit Learn framework. A qualitative comparison of the CppGP and SciKit Learn results can be plotted using the `Plot_Comparisons.py` script:
 
 <p align="center">
   <img width="90%" alt="Example regression plot in two dimensions" src="misc/2D_Comparison.png" style="margin: auto;">
 </p>
 
+The `VERIFY_NLML` variable can also be set to `True` to validate the negative log marginal likelihood calculation computed by CppGP using the SciKit Learn framework.
 
-## Profiling the CppGPs Implementation
+
+### Comparison with GPyTorch Implementation
+
+The CppGP results can also be compared with two GPyTorch implementations of Gaussian processes: the standard GP model as well as a structured kernel interpolation (SKI) implementation.  These results can be computed using the `Comparison_with_GPyTorch.py` script and can be plotted using the `Plot_Comparisons.py` script after setting the `USE_GPyTorch` to `True`.
+
+
+
+## Profiling the CppGP Implementation
 
 ### Requirements
 * [`valgrind`](http://valgrind.org/docs/manual/quick-start.html) - debugging/profiling tool suite
@@ -172,7 +179,7 @@ An example graph generated using the procedures outlined above is provided below
   <img width="90%" alt="Example profilier graph" src="misc/profilier_output.png" style="margin: auto;">
 </p>
 
-As can be seen from the figure, the majority of the computational demand of the CppGPs implementation results from the  `Eigen::LLT::solveInPlace` method.  This corresponds to the term `cholesky.solve(Matrix::Identity(n,n))` in the `evalNLML()` function definition, which is used to compute the gradients of the NLML with respect to the hyperparameters.  A simple multi-threaded implementation of this calculation has been incorporated into the code to achieve a considerable speed-up in the execution time.
+As can be seen from the figure, the majority of the computational demand of the CppGP implementation results from the  `Eigen::LLT::solveInPlace` method.  This corresponds to the term `cholesky.solve(Matrix::Identity(n,n))` in the `evalNLML()` function definition, which is used to compute the gradients of the NLML with respect to the hyperparameters.  A simple multi-threaded implementation of this calculation has been incorporated into the code to achieve a considerable speed-up in the execution time.
 
 
 ## References
