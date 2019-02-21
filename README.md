@@ -142,7 +142,7 @@ The `VERIFY_NLML` variable can also be set to `True` to validate the negative lo
 
 ### Comparison with GPyTorch Implementation
 
-The CppGP results can also be compared with two GPyTorch implementations of Gaussian processes: the standard GP model as well as a structured kernel interpolation (SKI) implementation.  These results can be computed using the `Comparison_with_GPyTorch.py` script and can be plotted using the `Plot_Comparisons.py` script after setting the `USE_GPyTorch` to `True`.
+The CppGP results can also be compared with two GPyTorch implementations of Gaussian processes: the standard GP model as well as a structured kernel interpolation (SKI) implementation.  These results can be computed using the `Comparison_with_GPyTorch.py` script and can be plotted using the `Plot_Comparisons.py` script after setting the `USE_GPyTorch` variable to `True`.
 
 
 
