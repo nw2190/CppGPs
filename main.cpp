@@ -16,7 +16,6 @@
 // Specify the target function for Gaussian process regression
 double targetFunc(Eigen::MatrixXd X)
 {
-
   if ( X.size() == 1 )
     {
       // Define the target function to be an oscillatory, non-periodic function
@@ -35,18 +34,6 @@ double targetFunc(Eigen::MatrixXd X)
     }
 }
 
-// Specify multi-modal target function for testing
-double targetFuncMultiModal(Eigen::MatrixXd X)
-{
-  Eigen::MatrixXd p1(1,2);  p1 << 0.25, 0.5;
-  Eigen::MatrixXd p2(1,2);  p2 << -0.25, -0.5;
-  double scale1 = 10.0; double scale2 = 15.0;
-  double sigma1 = 0.4;  double sigma2 = 0.3;
-  double radialTerm1 = ((X-p1)*(1/sigma1)).squaredNorm();
-  double radialTerm2 = ((X-p2)*(1/sigma2)).squaredNorm();
-  return scale1*std::exp(-radialTerm1) + scale2*std::exp(-radialTerm2);
-}
-
 
 // Example use of CppGPs code for Gaussian process regression
 int main(int argc, char const *argv[])
@@ -57,7 +44,6 @@ int main(int argc, char const *argv[])
 
   // Retrieve aliases from GP namescope
   using Matrix = Eigen::MatrixXd;
-  //using Vector = Eigen::VectorXd;
 
   // Convenience using-declarations
   using std::cout;
@@ -99,7 +85,6 @@ int main(int argc, char const *argv[])
   auto noiseLevel = 1.0;
   
   // Define random noise to add to target observations
-  //auto noise = sampleNormal(obsCount) * noiseLevel;
   Matrix noise;
   noise.noalias() = sampleNormal(obsCount) * noiseLevel;
 
@@ -111,10 +96,8 @@ int main(int argc, char const *argv[])
   // to the input observations 'X' and adding a noise vector
   for ( auto i : boost::irange(0,obsCount) )
     y(i) = targetFunc(X.row(i)) + noise(i);
-  //y(i) = targetFuncMultiModal(X.row(i)) + noise(i);
 
 
-  
   //
   //   [ Construct Gaussian Process Model ]
   //
@@ -154,7 +137,6 @@ int main(int argc, char const *argv[])
   auto optParams = model.getParams();
   auto noiseL = model.getNoise();
   auto scalingL = model.getScaling();
-  //cout << "\nOptimized Hyperparameters:" << endl << scalingL << " * " << optParams.transpose() << "  ";
   cout << "\nOptimized Hyperparameters:" << endl << std::sqrt(scalingL) << "**2 * " << optParams.transpose() << "  ";
   cout << "(Noise = " << noiseL << ")\n" << endl;
 
@@ -205,7 +187,6 @@ int main(int argc, char const *argv[])
   Matrix trueSoln(predCount,1);
   for ( auto i : boost::irange(0,predCount) )
     trueSoln(i,0) = targetFunc(testMesh.row(i));
-  //trueSoln(i,0) = targetFuncMultiModal(testMesh.row(i));
 
   std::ofstream fout;
   fout.open(outputFile);
@@ -258,8 +239,6 @@ int main(int argc, char const *argv[])
     fout << optParams(i) << ",";
   fout << noiseL;
   fout.close();
-
-  
 
   return 0;
   
