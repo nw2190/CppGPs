@@ -148,7 +148,7 @@ The CppGP results can also be compared with two GPyTorch implementations of Gaus
 
 ## Profiling the CppGP Implementation
 
-### [*] Update
+### [Update]
 The profiling steps below will not work with the current multi-threaded implementation.  They have been included for reference, since these results provided the original motivation for incorporating multi-threading into certain parts of the current code.
 
 ### Requirements
