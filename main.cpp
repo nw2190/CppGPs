@@ -2,16 +2,12 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
-#include <vector>
 #include <string>
-#include <memory>
-#include <random>
 #include <chrono>
 #include <fstream>
 #include <boost/range/irange.hpp>
-#include "GPs.h"
 
-#include <limits>
+#include "GPs.h"
 
 // Specify the target function for Gaussian process regression
 double targetFunc(Eigen::MatrixXd X)
