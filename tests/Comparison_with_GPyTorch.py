@@ -14,7 +14,7 @@ USE_Standard = True
 USE_SKI = True
 
 # Option to display training information for each iteration
-VERBOSE = False
+VERBOSE = True
 PLOT_LOSS = False
 
 # Evaluate GPyTorch Exact Gaussian Process Model on CppGPs training data
@@ -36,7 +36,8 @@ def standard():
     
     # Specify number of training iterations and learning rate for optimizer
     if inputDim == 1:
-        training_iter = 250
+        #training_iter = 250
+        training_iter = 750
     else:
         training_iter = 75
     learning_rate = 0.1
@@ -82,12 +83,12 @@ def standard():
     obsCount = obsX.shape[0]
 
     # Construct noise for observation data
-    noiseLevel = 1.0
-    normal_dist =  torch.distributions.Normal(0.0,noiseLevel)
-    noise = normal_dist.rsample(sample_shape=torch.Size([obsCount]))
+    #noiseLevel = 1.0
+    #normal_dist =  torch.distributions.Normal(0.0,noiseLevel)
+    #noise = normal_dist.rsample(sample_shape=torch.Size([obsCount]))
 
     # Generate random input observation data
-    uniform_dist = torch.distributions.Uniform(-1.0, 1.0)
+    #uniform_dist = torch.distributions.Uniform(-1.0, 1.0)
     #train_x = uniform_dist.rsample(sample_shape=torch.Size([obsCount, inputDim]))
     train_x = torch.from_numpy(obsX)
 
@@ -206,10 +207,17 @@ def standard():
     posterior_distribution = likelihood(model(testMesh))
 
     # Get posterior means and variances
+    #"""
     pred_mean = posterior_distribution.mean
     pred_var = posterior_distribution.variance
     pred_covar = posterior_distribution.covariance_matrix
-
+    #"""
+    """
+    pred_mean = mean_predictive_distribution.mean
+    pred_var = mean_predictive_distribution.variance
+    pred_covar = mean_predictive_distribution.covariance_matrix
+    """
+    
     if inputDim == 1:
         # Get sample paths from posterior
         samples = posterior_distribution.rsample(sample_shape=torch.Size([sampleCount]))
@@ -268,7 +276,8 @@ def SKI():
 
     # Specify number of training iterations and learning rate for optimizer
     if inputDim == 1:
-        training_iter = 250
+        training_iter = 750
+        #training_iter = 250
     else:
         training_iter = 75
     learning_rate = 0.1
@@ -446,9 +455,16 @@ def SKI():
         posterior_distribution = likelihood(model(testMesh))
         
         # Get posterior means and variances
+        #"""
         pred_mean = posterior_distribution.mean
         pred_var = posterior_distribution.variance
         pred_covar = posterior_distribution.covariance_matrix
+        #"""
+        """
+        pred_mean = mean_predictive_distribution.mean
+        pred_var = mean_predictive_distribution.variance
+        pred_covar = mean_predictive_distribution.covariance_matrix
+        """
 
     if inputDim == 1:
         # Get sample paths from posterior

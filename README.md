@@ -1,4 +1,8 @@
 # CppGP - C++ Gaussian Process Library
+====================
+
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Implementation of Numerical Gaussian Processes in C++
 
 ## Dependencies
